@@ -42,6 +42,7 @@ struct pgm_rwspinlock_t {
 };
 
 
+#if ! defined( NO_PGM_THREADS )
 /* read-write lock */
 
 static inline void pgm_rwspinlock_init (pgm_rwspinlock_t* rwspinlock) {
@@ -134,6 +135,7 @@ static inline bool pgm_rwspinlock_writer_trylock (pgm_rwspinlock_t* rwspinlock) 
 static inline void pgm_rwspinlock_writer_unlock (pgm_rwspinlock_t* rwspinlock) {
 	pgm_ticket_unlock (&rwspinlock->lock);
 }
+#endif /* ! NO_PGM_THREADS */
 
 PGM_END_DECLS
 

@@ -31,6 +31,7 @@ PGM_BEGIN_DECLS
 
 typedef uint64_t pgm_time_t;
 typedef void (*pgm_time_since_epoch_func)(const pgm_time_t*const restrict, time_t*restrict);
+typedef pgm_time_t (*pgm_time_update_func)(void);
 
 #define pgm_to_secs(t)	((uint64_t)( (t) / 1000000UL ))
 #define pgm_to_msecs(t)	((uint64_t)( (t) / 1000UL ))
@@ -50,6 +51,7 @@ typedef void (*pgm_time_since_epoch_func)(const pgm_time_t*const restrict, time_
 #define PGM_TIME_FORMAT	PRIu64
 
 extern pgm_time_since_epoch_func	pgm_time_since_epoch;
+extern pgm_time_update_func             pgm_time_update_now;
 
 PGM_END_DECLS
 

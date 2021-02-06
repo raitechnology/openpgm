@@ -35,15 +35,11 @@
 
 PGM_BEGIN_DECLS
 
-typedef pgm_time_t (*pgm_time_update_func)(void);
-
 #define pgm_time_after(a,b)	( (a) > (b) )
 #define pgm_time_before(a,b)    ( pgm_time_after((b),(a)) )
 
 #define pgm_time_after_eq(a,b)  ( (a) >= (b) )
 #define pgm_time_before_eq(a,b) ( pgm_time_after_eq((b),(a)) )
-
-extern pgm_time_update_func		pgm_time_update_now;
 
 PGM_GNUC_INTERNAL bool pgm_time_init (pgm_error_t**) PGM_GNUC_WARN_UNUSED_RESULT;
 PGM_GNUC_INTERNAL bool pgm_time_shutdown (void);

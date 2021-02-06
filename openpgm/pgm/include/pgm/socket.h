@@ -201,25 +201,8 @@ int pgm_wsapoll_info (pgm_sock_t*const restrict, WSAPOLLFD*const restrict, ULONG
 #if defined( EPOLLIN ) && defined( EPOLLOUT )
 int pgm_epoll_ctl (pgm_sock_t*const, const int, const int, const int);
 #endif
-
-static
-const char*
-pgm_family_string (
-	const int       family
-	)
-{
-	const char* c;
-
-	switch (family) {
-	case AF_UNSPEC:         c = "AF_UNSPEC"; break;
-	case AF_INET:           c = "AF_INET"; break;
-	case AF_INET6:          c = "AF_INET6"; break;
-	default: c = "(unknown)"; break;
-	}
-
-	return c;
-}
-
+size_t pgm_pkt_offset(bool, sa_family_t);
+const char* pgm_family_string (const int family);
 char* pgm_gsr_to_string (const struct pgm_group_source_req* gsr, char* text, size_t len);
 char* pgm_addrinfo_to_string (const struct pgm_addrinfo_t* addr, char* text, size_t len);
 

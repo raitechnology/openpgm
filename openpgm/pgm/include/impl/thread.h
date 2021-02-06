@@ -67,7 +67,7 @@ extern bool pgm_smp_system;
 PGM_BEGIN_DECLS
 
 struct pgm_mutex_t {
-#ifndef _WIN32
+#if ! defined( _WIN32 )
 /* POSIX mutex */
 	pthread_mutex_t		pthread_mutex;
 #else
@@ -96,7 +96,7 @@ struct pgm_spinlock_t {
 };
 
 struct pgm_cond_t {
-#ifndef _WIN32
+#if ! defined( _WIN32 )
 /* POSIX condition variable */
 	pthread_cond_t		pthread_cond;
 #elif ( _WIN32_WINNT >= 0x0600 )
@@ -136,7 +136,9 @@ PGM_GNUC_INTERNAL void pgm_mutex_init (pgm_mutex_t*);
 PGM_GNUC_INTERNAL void pgm_mutex_free (pgm_mutex_t*);
 
 static inline bool pgm_mutex_trylock (pgm_mutex_t* mutex) {
-#ifndef _WIN32
+#if defined( NO_PGM_THREADS )
+	return TRUE;
+#elif ! defined( _WIN32 )
 	const int result = pthread_mutex_trylock (&mutex->pthread_mutex);
 	if (EBUSY == result)
 		return FALSE;
@@ -151,7 +153,9 @@ static inline bool pgm_mutex_trylock (pgm_mutex_t* mutex) {
  */
 
 static inline void pgm_mutex_lock (pgm_mutex_t* mutex) {
-#ifndef _WIN32
+#if defined( NO_PGM_THREADS )
+	return;
+#elif ! defined( _WIN32 )
 	pthread_mutex_lock (&mutex->pthread_mutex);
 #else
 	EnterCriticalSection (&mutex->win32_crit);
@@ -162,7 +166,9 @@ static inline void pgm_mutex_lock (pgm_mutex_t* mutex) {
  */
 
 static inline void pgm_mutex_unlock (pgm_mutex_t* mutex) {
-#ifndef _WIN32
+#if defined( NO_PGM_THREADS )
+	return;
+#elif ! defined( _WIN32 )
 	pthread_mutex_unlock (&mutex->pthread_mutex);
 #else
 	LeaveCriticalSection (&mutex->win32_crit);
@@ -173,7 +179,9 @@ PGM_GNUC_INTERNAL void pgm_spinlock_init (pgm_spinlock_t*);
 PGM_GNUC_INTERNAL void pgm_spinlock_free (pgm_spinlock_t*);
 
 static inline bool pgm_spinlock_trylock (pgm_spinlock_t* spinlock) {
-#if defined( USE_TICKET_SPINLOCK )
+#if defined( NO_PGM_THREADS )
+	return TRUE;
+#elif defined( USE_TICKET_SPINLOCK )
 	return pgm_ticket_trylock (&spinlock->ticket_lock);
 #elif defined( HAVE_PTHREAD_SPINLOCK )
 	const int result = pthread_spin_trylock (&spinlock->pthread_spinlock);
@@ -192,7 +200,9 @@ static inline bool pgm_spinlock_trylock (pgm_spinlock_t* spinlock) {
 }
 
 static inline void pgm_spinlock_lock (pgm_spinlock_t* spinlock) {
-#if defined( USE_TICKET_SPINLOCK )
+#if defined( NO_PGM_THREADS )
+	return;
+#elif defined( USE_TICKET_SPINLOCK )
 	pgm_ticket_lock (&spinlock->ticket_lock);
 #elif defined( HAVE_PTHREAD_SPINLOCK )
 	pthread_spin_lock (&spinlock->pthread_spinlock);
@@ -228,7 +238,9 @@ static inline void pgm_spinlock_lock (pgm_spinlock_t* spinlock) {
 }
 
 static inline void pgm_spinlock_unlock (pgm_spinlock_t* spinlock) {
-#if defined( USE_TICKET_SPINLOCK )
+#if defined( NO_PGM_THREADS )
+	return;
+#elif defined( USE_TICKET_SPINLOCK )
 	pgm_ticket_unlock (&spinlock->ticket_lock);
 #elif defined( HAVE_PTHREAD_SPINLOCK )
 	pthread_spin_unlock (&spinlock->pthread_spinlock);
@@ -251,7 +263,7 @@ PGM_GNUC_INTERNAL void pgm_cond_wait (pgm_cond_t*, CRITICAL_SECTION*);
 #endif
 PGM_GNUC_INTERNAL void pgm_cond_free (pgm_cond_t*);
 
-#if defined( _WIN32 ) && !( _WIN32_WINNT >= 0x600 ) && !defined( USE_DUMB_RWSPINLOCK )
+#if defined( _WIN32 ) && !( _WIN32_WINNT >= 0x600 ) && !defined( USE_DUMB_RWSPINLOCK ) && !defined( NO_PGM_THREADS )
 /* read-write lock implementation for Windows XP */
 PGM_GNUC_INTERNAL void pgm_rwlock_reader_lock (pgm_rwlock_t*);
 PGM_GNUC_INTERNAL bool pgm_rwlock_reader_trylock (pgm_rwlock_t*);
@@ -261,7 +273,9 @@ PGM_GNUC_INTERNAL bool pgm_rwlock_writer_trylock (pgm_rwlock_t*);
 PGM_GNUC_INTERNAL void pgm_rwlock_writer_unlock (pgm_rwlock_t*);
 #else
 static inline void pgm_rwlock_reader_lock (pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 /* User-space read/write lock */
 	pgm_rwspinlock_reader_lock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
@@ -273,7 +287,9 @@ static inline void pgm_rwlock_reader_lock (pgm_rwlock_t* rwlock) {
 #	endif
 }
 static inline bool pgm_rwlock_reader_trylock (pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return TRUE;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 	return pgm_rwspinlock_reader_trylock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
 	return TryAcquireSRWLockShared (&rwlock->win32_rwlock);
@@ -282,7 +298,9 @@ static inline bool pgm_rwlock_reader_trylock (pgm_rwlock_t* rwlock) {
 #	endif
 }
 static inline void pgm_rwlock_reader_unlock(pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 	pgm_rwspinlock_reader_unlock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
 	ReleaseSRWLockShared (&rwlock->win32_rwlock);
@@ -291,7 +309,9 @@ static inline void pgm_rwlock_reader_unlock(pgm_rwlock_t* rwlock) {
 #	endif
 }
 static inline void pgm_rwlock_writer_lock (pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 	pgm_rwspinlock_writer_lock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
 	AcquireSRWLockExclusive (&rwlock->win32_rwlock);
@@ -300,7 +320,9 @@ static inline void pgm_rwlock_writer_lock (pgm_rwlock_t* rwlock) {
 #	endif
 }
 static inline bool pgm_rwlock_writer_trylock (pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return TRUE;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 	return pgm_rwspinlock_writer_trylock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
 	return TryAcquireSRWLockExclusive (&rwlock->win32_rwlock);
@@ -309,7 +331,9 @@ static inline bool pgm_rwlock_writer_trylock (pgm_rwlock_t* rwlock) {
 #	endif
 }
 static inline void pgm_rwlock_writer_unlock (pgm_rwlock_t* rwlock) {
-#	if defined( USE_DUMB_RWSPINLOCK )
+#	if defined( NO_PGM_THREADS )
+	return;
+#	elif defined( USE_DUMB_RWSPINLOCK )
 	pgm_rwspinlock_writer_unlock (&rwlock->rwspinlock);
 #	elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x0600 )
 	ReleaseSRWLockExclusive (&rwlock->win32_rwlock);
@@ -329,7 +353,9 @@ static inline
 void
 pgm_thread_yield (void)
 {
-#if defined( __sun )
+#if defined( NO_PGM_THREADS )
+	return;
+#elif defined( __sun )
 	thr_yield();		/* Solaris specific thread API */
 #elif !defined( _WIN32 )
 	sched_yield();		/* most Unix platforms */

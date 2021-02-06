@@ -65,9 +65,46 @@ struct pgm_notify_t {
 #	define PGM_NOTIFY_INIT		{ { INVALID_SOCKET, INVALID_SOCKET } }
 #endif
 
+#ifdef PGM_NO_NOTIFY
+static inline bool pgm_notify_is_valid (pgm_notify_t* )
+{
+	return true;
+}
 
-static inline
-bool
+static inline int pgm_notify_init (pgm_notify_t* notify);
+{
+	const init_notify = PGM_NOTIFY_INIT;
+	*notify = init_notify;
+	return 0;
+}
+
+static inline int pgm_notify_destroy (pgm_notify_t*);
+{
+	return 0;
+}
+
+static inline int pgm_notify_send (pgm_notify_t*);
+{
+	return 0;
+}
+
+static inline int pgm_notify_read (pgm_notify_t*);
+{
+	return 0;
+}
+
+static inline void pgm_notify_clear (pgm_notify_t*);
+{
+	return 0;
+}
+
+static inline SOCKET pgm_notify_get_socket (pgm_notify_t*);
+{
+	return INVALID_SOCKET;
+}
+
+#else
+static inline bool
 pgm_notify_is_valid (
 	pgm_notify_t*	notify
 	)
@@ -87,8 +124,7 @@ pgm_notify_is_valid (
 	return TRUE;
 }
 
-static inline
-int
+static inline int
 pgm_notify_init (
 	pgm_notify_t*	notify
 	)
@@ -177,8 +213,7 @@ pgm_notify_init (
 #endif /* HAVE_EVENTFD */
 }
 
-static inline
-int
+static inline int
 pgm_notify_destroy (
 	pgm_notify_t*	notify
 	)
@@ -212,8 +247,7 @@ pgm_notify_destroy (
 	return 0;
 }
 
-static inline
-int
+static inline int
 pgm_notify_send (
 	pgm_notify_t*	notify
 	)
@@ -237,8 +271,7 @@ pgm_notify_send (
 #endif /* HAVE_EVENTFD */
 }
 
-static inline
-int
+static inline int
 pgm_notify_read (
 	pgm_notify_t*	notify
 	)
@@ -261,8 +294,7 @@ pgm_notify_read (
 #endif /* HAVE_EVENTFD */
 }
 
-static inline
-void
+static inline void
 pgm_notify_clear (
 	pgm_notify_t*	notify
 	)
@@ -285,8 +317,7 @@ pgm_notify_clear (
 #endif /* HAVE_EVENTFD */
 }
 
-static inline
-SOCKET
+static inline SOCKET
 pgm_notify_get_socket (
 	pgm_notify_t*	notify
 	)
@@ -304,6 +335,7 @@ pgm_notify_get_socket (
 	return notify->s[0];
 #endif /* HAVE_EVENTFD */
 }
+#endif
 
 PGM_END_DECLS
 

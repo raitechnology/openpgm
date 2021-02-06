@@ -84,6 +84,8 @@ union pgm_ticket_t {
 #endif
 };
 
+#if ! defined( NO_PGM_THREADS )
+
 #define pgm_tkt_ticket	pgm_un.pgm_un_ticket
 #define pgm_tkt_user	pgm_un.pgm_un_user
 
@@ -415,6 +417,7 @@ static inline bool pgm_ticket_is_unlocked (pgm_ticket_t* ticket) {
 #endif
 	return (copy.pgm_tkt_ticket == copy.pgm_tkt_user);
 }
+#endif /* ! NO_PGM_THREADS */
 
 PGM_END_DECLS
 

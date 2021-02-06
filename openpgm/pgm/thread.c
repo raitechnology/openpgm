@@ -25,13 +25,32 @@
 #include <errno.h>
 #include <impl/framework.h>
 
-//#define THREAD_DEBUG
-
-
 /* Globals */
 
 bool pgm_smp_system PGM_GNUC_READ_MOSTLY = TRUE;
 
+#if defined( NO_PGM_THREADS )
+
+PGM_GNUC_INTERNAL void pgm_mutex_init (pgm_mutex_t* m) {}
+PGM_GNUC_INTERNAL void pgm_mutex_free (pgm_mutex_t* m) {}
+PGM_GNUC_INTERNAL void pgm_spinlock_init (pgm_spinlock_t* s) {}
+PGM_GNUC_INTERNAL void pgm_spinlock_free (pgm_spinlock_t* s) {}
+PGM_GNUC_INTERNAL void pgm_cond_init (pgm_cond_t* c) {}
+PGM_GNUC_INTERNAL void pgm_cond_signal (pgm_cond_t* c) {}
+PGM_GNUC_INTERNAL void pgm_cond_broadcast (pgm_cond_t* c) {}
+#ifndef _WIN32
+PGM_GNUC_INTERNAL void pgm_cond_wait (pgm_cond_t* c, pthread_mutex_t* m) {}
+#else
+PGM_GNUC_INTERNAL void pgm_cond_wait (pgm_cond_t* c, CRITICAL_SECTION* m) {}
+#endif
+PGM_GNUC_INTERNAL void pgm_cond_free (pgm_cond_t* c) {}
+PGM_GNUC_INTERNAL void pgm_rwlock_init (pgm_rwlock_t* rw) {}
+PGM_GNUC_INTERNAL void pgm_rwlock_free (pgm_rwlock_t* rw) {}
+PGM_GNUC_INTERNAL void pgm_thread_init (void) {}
+PGM_GNUC_INTERNAL void pgm_thread_shutdown (void) {}
+
+#else /* ! NO_PGM_THREADS */
+//#define THREAD_DEBUG
 
 /* Locals */
 
@@ -554,6 +573,5 @@ pgm_rwlock_writer_unlock (
 	LeaveCriticalSection (&rwlock->win32_crit);
 }
 #endif /* defined( _WIN32 ) && !( _WIN32_WINNT >= 0x600 ) */
-
-
+#endif
 /* eof */

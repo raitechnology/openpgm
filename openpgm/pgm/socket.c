@@ -2532,29 +2532,38 @@ pgm_select_info (
 #endif
 		if (sock->can_send_data) {
 			const SOCKET rdata_fd = pgm_notify_get_socket (&sock->rdata_notify);
-			FD_SET(rdata_fd, readfds);
+			if (rdata_fd != INVALID_SOCKET)
+			{
+				FD_SET(rdata_fd, readfds);
 #ifndef _WIN32
-			fds = MAX(fds, rdata_fd + 1);
-#else
-			fds++;
-#endif
-			if (is_congested) {
-				const SOCKET ack_fd = pgm_notify_get_socket (&sock->ack_notify);
-				FD_SET(ack_fd, readfds);
-#ifndef _WIN32
-				fds = MAX(fds, ack_fd + 1);
+				fds = MAX(fds, rdata_fd + 1);
 #else
 				fds++;
 #endif
 			}
+			if (is_congested) {
+				const SOCKET ack_fd = pgm_notify_get_socket (&sock->ack_notify);
+				if (ack_fd != INVALID_SOCKET)
+				{
+					FD_SET(ack_fd, readfds);
+#ifndef _WIN32
+					fds = MAX(fds, ack_fd + 1);
+#else
+					fds++;
+#endif
+				}
+			}
 		}
 		const SOCKET pending_fd = pgm_notify_get_socket (&sock->pending_notify);
-		FD_SET(pending_fd, readfds);
+		if (pending_fd != INVALID_SOCKET)
+		{
+			FD_SET(pending_fd, readfds);
 #ifndef _WIN32
-		fds = MAX(fds, pending_fd + 1);
+			fds = MAX(fds, pending_fd + 1);
 #else
-		fds++;
+			fds++;
 #endif
+		}
 	}
 
 	if (sock->can_send_data && writefds && !is_congested)
@@ -2632,15 +2641,23 @@ pgm_wsapoll_info (
 		fds[nfds].events = PGM_POLLIN;
 		nfds++;
 		if (sock->can_send_data) {
+			const SOCKET rdata_fd = pgm_notify_get_socket (&sock->rdata_notify);
+			if (rdata_fd != INVALID_SOCKET)
+			{
+				pgm_assert ( (1 + nfds) <= *n_fds );
+				fds[nfds].fd = rdata_fd;
+				fds[nfds].events = PGM_POLLIN;
+				nfds++;
+			}
+		}
+		const SOCKET pending_fd = pgm_notify_get_socket (&sock->pending_notify);
+		if (pending_fd != INVALID_SOCKET)
+		{
 			pgm_assert ( (1 + nfds) <= *n_fds );
-			fds[nfds].fd = pgm_notify_get_socket (&sock->rdata_notify);
+			fds[nfds].fd = pending_fd;
 			fds[nfds].events = PGM_POLLIN;
 			nfds++;
 		}
-		pgm_assert ( (1 + nfds) <= *n_fds );
-		fds[nfds].fd = pgm_notify_get_socket (&sock->pending_notify);
-		fds[nfds].events = PGM_POLLIN;
-		nfds++;
 	}
 
 /* ODATA only published on regular socket, no need to poll router-alert sock */
@@ -2649,14 +2666,19 @@ pgm_wsapoll_info (
 		pgm_assert ( (1 + nfds) <= *n_fds );
 		if (sock->use_pgmcc && sock->tokens < pgm_fp8 (1)) {
 /* rx thread poll for ACK */
-			fds[nfds].fd = pgm_notify_get_socket (&sock->ack_notify);
-			fds[nfds].events = PGM_POLLIN;
+			const SOCKET ack_fd = pgm_notify_get_socket (&sock->ack_notify);
+			if (ack_fd != INVALID_SOCKET)
+			{
+				fds[nfds].fd = ack_fd;
+				fds[nfds].events = PGM_POLLIN;
+				nfds++;
+			}
 		} else {
 /* kernel resource poll */
 			fds[nfds].fd = sock->send_sock;
 			fds[nfds].events = PGM_POLLOUT;
+			nfds++;
 		}
-		nfds++;
 	}
 
 	return *n_fds = nfds;
@@ -2700,11 +2722,21 @@ pgm_epoll_ctl (
 		if (retval)
 			goto out;
 		if (sock->can_send_data) {
-			retval = epoll_ctl (epfd, op, pgm_notify_get_socket (&sock->rdata_notify), &event);
+			const SOCKET rdata_fd = pgm_notify_get_socket (&sock->rdata_notify);
+			if (rdata_fd != INVALID_SOCKET)
+			{
+				retval = epoll_ctl (epfd, op, rdata_fd, &event);
+				if (retval)
+					goto out;
+			}
+		}
+		const SOCKET pending_fd = pgm_notify_get_socket (&sock->pending_notify);
+		if (pending_fd != INVALID_SOCKET)
+		{
+			retval = epoll_ctl (epfd, op, pending_fd, &event);
 			if (retval)
 				goto out;
 		}
-		retval = epoll_ctl (epfd, op, pgm_notify_get_socket (&sock->pending_notify), &event);
 		if (retval)
 			goto out;
 
@@ -2731,9 +2763,13 @@ pgm_epoll_ctl (
 		if (enable_ack_socket)
 		{
 /* rx thread poll for ACK */
-			event.events = EPOLLIN | (events & (EPOLLONESHOT));
-			event.data.ptr = sock;
-			retval = epoll_ctl (epfd, op, pgm_notify_get_socket (&sock->ack_notify), &event);
+			const SOCKET ack_fd = pgm_notify_get_socket (&sock->ack_notify);
+			if (ack_fd != INVALID_SOCKET)
+			{
+				event.events = EPOLLIN | (events & (EPOLLONESHOT));
+				event.data.ptr = sock;
+				retval = epoll_ctl (epfd, op, ack_fd, &event);
+			}
 		}
 
 		if (enable_send_socket)
@@ -2780,6 +2816,23 @@ pgm_protocol_string (
 	}
 
 	return c;
+}
+
+const char*
+pgm_family_string (
+        const int       family
+        )
+{
+        const char* c;
+
+        switch (family) {
+        case AF_UNSPEC:         c = "AF_UNSPEC"; break;
+        case AF_INET:           c = "AF_INET"; break;
+        case AF_INET6:          c = "AF_INET6"; break;
+        default: c = "(unknown)"; break;
+        }
+
+        return c;
 }
 
 /* eof */
