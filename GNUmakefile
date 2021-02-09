@@ -28,7 +28,7 @@ cc          := $(CC)
 clink       := $(CC)
 arch_cflags := -mavx -maes -fno-omit-frame-pointer
 #gcc_wflags  := -Wall -Wextra -Werror
-gcc_wflags  := -Wall -Wextra -Wno-unused-function -Wno-unused-parameter
+gcc_wflags  := -std=c99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter
 fpicflags   := -fPIC
 soflag      := -shared
 
@@ -75,7 +75,7 @@ DEFINES      ?= -D_REENTRANT \
 		-DHAVE_STRERROR_R \
 		-DSTRERROR_R_CHAR_P \
                 -D_XOPEN_SOURCE=600 \
-		-D_DEFAULT_SOURCE \
+		-D_GNU_SOURCE \
 		-DHAVE_ISO_VARARGS \
 		-DHAVE_GNUC_VARARGS \
 		-DHAVE_STRUCT_IP_MREQN \
