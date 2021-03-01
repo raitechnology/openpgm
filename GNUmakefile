@@ -138,7 +138,7 @@ libopenpgm_objs  := $(addprefix $(objd)/, $(addsuffix .o, $(libopenpgm_files)))
 libopenpgm_dbjs  := $(addprefix $(objd)/, $(addsuffix .fpic.o, $(libopenpgm_files)))
 libopenpgm_deps  := $(addprefix $(dependd)/, $(addsuffix .d, $(libopenpgm_files))) \
                      $(addprefix $(dependd)/, $(addsuffix .fpic.d, $(libopenpgm_files)))
-libopenpgm_spec  := $(version)-$(build_num)
+libopenpgm_spec  := $(version)-$(build_num)_$(git_hash)
 libopenpgm_dylib := $(version).$(build_num)
 libopenpgm_ver   := $(major_num).$(minor_num)
 
@@ -154,7 +154,7 @@ libopenpgm_st_objs  := $(addprefix $(objd)/, $(addsuffix .sto, $(libopenpgm_file
 libopenpgm_st_dbjs  := $(addprefix $(objd)/, $(addsuffix .fpic.sto, $(libopenpgm_files)))
 libopenpgm_st_deps  := $(addprefix $(dependd)/, $(addsuffix .std, $(libopenpgm_files))) \
                      $(addprefix $(dependd)/, $(addsuffix .fpic.std, $(libopenpgm_files)))
-libopenpgm_st_spec  := $(version)-$(build_num)
+libopenpgm_st_spec  := $(version)-$(build_num)_$(git_hash)
 libopenpgm_st_dylib := $(version).$(build_num)
 libopenpgm_st_ver   := $(major_num).$(minor_num)
 
