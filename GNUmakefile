@@ -225,7 +225,7 @@ dist_bins: $(all_libs)
 
 .PHONY: dist_rpm
 dist_rpm: srpm
-	( cd rpmbuild && rpmbuild --define "-topdir `pwd`" -ba SPECS/raipgm.spec )
+	( cd rpmbuild && rpmbuild --define "-topdir `pwd`" -ba SPECS/openpgm.spec )
 
 # dependencies made by 'make depend'
 -include $(dependd)/depend.make
@@ -234,21 +234,21 @@ ifeq ($(DESTDIR),)
 # 'sudo make install' puts things in /usr/local/lib, /usr/local/include
 install_prefix = /usr/local
 else
-# debuild uses DESTDIR to put things into debian/raipgm/usr
+# debuild uses DESTDIR to put things into debian/openpgm/usr
 install_prefix = $(DESTDIR)/usr
 endif
 
 install: dist_bins
 	install -d $(install_prefix)/lib $(install_prefix)/bin
-	install -d $(install_prefix)/include/raipgm
-	for f in $(libd)/libraipgm.* ; do \
+	install -d $(install_prefix)/include/pgm
+	for f in $(libd)/libopenpgm.* ; do \
 	if [ -h $$f ] ; then \
 	cp -a $$f $(install_prefix)/lib ; \
 	else \
 	install $$f $(install_prefix)/lib ; \
 	fi ; \
 	done
-	install -m 644 include/raipgm/*.h $(install_prefix)/include/raipgm
+	install -m 644 openpgm/pgm/include/pgm/*.h $(install_prefix)/include/pgm
 
 $(objd)/%.o: openpgm/pgm/%.c
 	$(cc) $(cflags) $(includes) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@

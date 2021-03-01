@@ -28,7 +28,7 @@ PGM protocol
 
 %build
 make build_dir=./usr %{?_smp_mflags} dist_bins
-cp -a ./include ./usr/include
+cp -a openpgm/pgm/include/pgm ./usr/include
 
 %install
 rm -rf %{buildroot}
@@ -42,7 +42,6 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-/usr/bin/*
 /usr/lib64/*
 /usr/include/*
 
