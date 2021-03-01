@@ -11,6 +11,7 @@ BuildRoot:	${_tmppath}
 Prefix:	        /usr
 BuildRequires:  gcc-c++
 BuildRequires:  chrpath
+BuildRequires:  git-core
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
