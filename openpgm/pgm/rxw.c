@@ -1267,6 +1267,7 @@ pgm_rxw_readv (
 	case PGM_PKT_STATE_COMMIT_DATA:
 	case PGM_PKT_STATE_ERROR:
 	default:
+		bytes_read = -1;
 		pgm_assert_not_reached();
 		break;
 	}

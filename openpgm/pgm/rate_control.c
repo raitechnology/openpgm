@@ -144,6 +144,7 @@ pgm_rate_check2 (
 	{
 /* ensure we have a timestamp */
 		now = pgm_time_update_now();
+		new_major_limit = 0;
 	}
 
 	if (0 != minor_bucket->rate_per_sec)

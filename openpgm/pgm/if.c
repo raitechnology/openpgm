@@ -304,7 +304,7 @@ is_in_net (
 	pgm_assert (NULL != netaddr);
 	pgm_assert (NULL != netmask);
 
-#ifdef IF_DEBUG
+#if defined( IF_DEBUG ) && defined( PGM_DEBUG )
 	const struct in_addr taddr    = { .s_addr = pgm_htonl (addr->s_addr) };
 	const struct in_addr tnetaddr = { .s_addr = pgm_htonl (netaddr->s_addr) };
 	const struct in_addr tnetmask = { .s_addr = pgm_htonl (netmask->s_addr) };
@@ -332,7 +332,7 @@ is_in_net6 (
 	pgm_assert (NULL != netaddr);
 	pgm_assert (NULL != netmask);
 
-#ifdef IF_DEBUG
+#if defined( IF_DEBUG ) && defined( PGM_DEBUG )
 	char saddr[INET6_ADDRSTRLEN], snetaddr[INET6_ADDRSTRLEN], snetmask[INET6_ADDRSTRLEN];
 	pgm_debug ("is_in_net6 (addr:%s netaddr:%s netmask:%s)",
 		 pgm_inet_ntop (AF_INET6, addr, saddr, sizeof(saddr)),
@@ -420,7 +420,7 @@ parse_interface (
  */
 	if (AF_INET6 != family && 0 == pgm_inet_network (ifname, &in_addr))
 	{
-#ifdef IF_DEBUG
+#if defined( IF_DEBUG ) && defined( PGM_DEBUG )
 		struct in_addr t = { .s_addr = pgm_htonl (in_addr.s_addr) };
 		pgm_debug ("IPv4 network address: %s", inet_ntoa (t));
 #endif
@@ -822,7 +822,7 @@ parse_interface (
 					ir->ir_interface = ifindex;
 					memcpy (&ir->ir_addr, ifa->ifa_addr, pgm_sockaddr_len (ifa->ifa_addr));
 					pgm_freeifaddrs (ifap);
-#ifdef IF_DEBUG
+#if defined( IF_DEBUG ) && defined( PGM_DEBUG )
 					{
 						char s[IR_STRLEN];
 						pgm_debug ("parse_interface (\"%s\") evaluated as { %s }.",
@@ -969,7 +969,7 @@ skip_inet_network:
 		return FALSE;
 	}
 
-#ifdef IF_DEBUG
+#if defined( IF_DEBUG ) && defined( PGM_DEBUG )
 	{
 		char s[IR_STRLEN];
 		pgm_debug ("parse_interface (\"%s\") evaluted as { %s }.",

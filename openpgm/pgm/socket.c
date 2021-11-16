@@ -478,14 +478,20 @@ pgm_socket (
  */
 		pgm_trace (PGM_LOG_ROLE_NETWORK,_("Set socket sharing."));
 		const int v = 1;
-                const int ip_mcast_all = 0; // turn off
 #if !defined(SO_REUSEPORT) || defined(DISABLE_REUSEPORT)
-                if (SOCKET_ERROR == setsockopt (new_sock->recv_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v)) ||
+                int status = setsockopt (new_sock->recv_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v));
 #if defined(DISABLE_IP_MULTICAST_ALL)
-                    SOCKET_ERROR == setsockopt (new_sock->recv_sock, IPPROTO_IP, IP_MULTICAST_ALL, (const char*)&ip_mcast_all, sizeof(ip_mcast_all)) ||        
+		if (status != SOCKET_ERROR )
+		{
+		    const int ip_mcast_all = 0; // turn off
+		    status = setsockopt (new_sock->recv_sock, IPPROTO_IP, IP_MULTICAST_ALL, (const char*)&ip_mcast_all, sizeof(ip_mcast_all));
+		}
 #endif
-		    SOCKET_ERROR == setsockopt (new_sock->send_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v)) ||
-		    SOCKET_ERROR == setsockopt (new_sock->send_with_router_alert_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v)))
+		if (status != SOCKET_ERROR )
+		    status = setsockopt (new_sock->send_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v));
+		if (status != SOCKET_ERROR )
+		    status = setsockopt (new_sock->send_with_router_alert_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&v, sizeof(v));
+		if (status == SOCKET_ERROR)
 		{
 			const int save_errno = pgm_get_last_sock_error();
 			char errbuf[1024];
@@ -1161,6 +1167,7 @@ pgm_setsockopt (
 			if (SOCKET_ERROR == pgm_sockaddr_multicast_loop (sock->recv_sock, sock->family, v))
 				break;
 #endif
+			sock->use_multicast_loop = (uint8_t) *(const int*)optval;
 		}
 		status = TRUE;
 		break;
@@ -1563,7 +1570,7 @@ pgm_setsockopt (
  */
 	case PGM_SEND_GROUP:
 	{
-		void*     restrict tmp_optval = optval; 
+		void*     restrict tmp_optval = (void *) optval;
 		socklen_t          tmp_optlen = optlen; 
 
 /* Use OpenPGM enhanced struct with support for multiple IP addresses per interface. */
@@ -1614,7 +1621,7 @@ pgm_setsockopt (
 		if (PGM_UNLIKELY(sock->recv_gsr_len >= IP_MAX_MEMBERSHIPS))
 			break;
 	{
-		void*	  restrict tmp_optval = optval;
+		void*	  restrict tmp_optval = (void *) optval;
 		socklen_t	   tmp_optlen = optlen;
 
 /* Use OpenPGM enhanced struct with support for multiple IP addresses per interface. */

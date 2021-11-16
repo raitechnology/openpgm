@@ -43,8 +43,8 @@
 
 #else
 
-#	define pgm_prefetch(addr)	(addr)
-#	define pgm_prefetchw(addr)	(addr)
+#	define pgm_prefetch(addr)	/*(addr)*/
+#	define pgm_prefetchw(addr)	/*(addr)*/
 
 #endif
 

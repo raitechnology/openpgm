@@ -28,7 +28,7 @@ cc          := $(CC)
 clink       := $(CC)
 arch_cflags := -mavx -maes -fno-omit-frame-pointer
 #gcc_wflags  := -Wall -Wextra -Werror
-gcc_wflags  := -std=c99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter
+gcc_wflags  := -std=c99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-stringop-truncation -Wno-cpp
 fpicflags   := -fPIC
 soflag      := -shared
 
@@ -83,9 +83,10 @@ DEFINES      ?= -D_REENTRANT \
 		-DHAVE_DSO_VISIBILITY \
 		-DUSE_TICKET_SPINLOCK \
 		-DUSE_DUMB_RWSPINLOCK \
-	        -DUSE_GALOIS_MUL_LUT
+	        -DUSE_GALOIS_MUL_LUT \
+		-DDISABLE_IP_MULTICAST_ALL
 defines     := $(DEFINES)
-st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS -DPGM_DISABLE_ASSERT
+st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS
 sock_lib    :=
 math_lib    := -lm
 thread_lib  := -pthread -lrt

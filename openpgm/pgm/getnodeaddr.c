@@ -107,7 +107,7 @@ pgm_getnodeaddr (
 
 		na = pgm_malloc0 (na_len);
 		char* p = (char*)na;	/* point to start of block */
-		struct addrinfo* prev = NULL;
+		/*struct addrinfo* prev = NULL;*/
 
 		for (ai = result; NULL != ai; ai = ai->ai_next)
 		{

@@ -437,9 +437,14 @@ on_downstream (
 
 /* search for TSI peer context or create a new one */
 	if (PGM_LIKELY(pgm_tsi_hash (&skb->tsi) == sock->last_hash_key &&
-			NULL != sock->last_hash_value))
+			NULL != sock->last_hash_value &&
+			pgm_tsi_equal(&skb->tsi, &sock->last_hash_value->tsi)))
 	{
 		*source = sock->last_hash_value;
+	}
+	else if (PGM_UNLIKELY(sock->use_multicast_loop == 2 && pgm_tsi_equal(&skb->tsi, &sock->tsi)))
+	{
+		goto out_discarded;
 	}
 	else
 	{

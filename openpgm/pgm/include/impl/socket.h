@@ -79,7 +79,7 @@ struct pgm_sock_t {
 	uint16_t			max_tsdu;		    /* excluding optional var_pktlen word */
 	uint16_t			max_tsdu_fragment;
 	size_t				iphdr_len;
-	bool				use_multicast_loop;    	    /* and reuseaddr for UDP encapsulation */
+	uint8_t				use_multicast_loop;    	    /* and reuseaddr for UDP encapsulation */
 	unsigned			hops;
 	unsigned			txw_sqns, txw_secs;
 	unsigned			rxw_sqns, rxw_secs;
@@ -123,7 +123,7 @@ struct pgm_sock_t {
 	pgm_notify_t			rdata_notify;
 
 	pgm_hash_t			last_hash_key;
-	void* restrict			last_hash_value;
+	pgm_peer_t * restrict		last_hash_value;
 	unsigned			last_commit;
 	size_t				blocklen;		    /* length of buffer blocked */
 	bool				is_apdu_eagain;		    /* writer-lock on window_lock exists as send would block */
