@@ -189,6 +189,7 @@ int pgm_recvmsg (pgm_sock_t*const restrict, struct pgm_msgv_t*const restrict, co
 int pgm_recvmsgv (pgm_sock_t*const restrict, struct pgm_msgv_t*const restrict, const size_t, const int, size_t*restrict, pgm_error_t**restrict) PGM_GNUC_WARN_UNUSED_RESULT;
 int pgm_recv (pgm_sock_t*const restrict, void*restrict, const size_t, const int, size_t*const restrict, pgm_error_t**restrict) PGM_GNUC_WARN_UNUSED_RESULT;
 int pgm_recvfrom (pgm_sock_t*const restrict, void*restrict, const size_t, const int, size_t*restrict, struct pgm_sockaddr_t*restrict, socklen_t*restrict, pgm_error_t**restrict) PGM_GNUC_WARN_UNUSED_RESULT;
+void pgm_printstats( pgm_sock_t const* restrict, unsigned *, unsigned * );
 
 bool pgm_getsockname (pgm_sock_t*const restrict, struct pgm_sockaddr_t*restrict, socklen_t*restrict);
 int pgm_select_info (pgm_sock_t*const restrict, fd_set*const restrict, fd_set*const restrict, int*const restrict);
@@ -205,6 +206,8 @@ size_t pgm_pkt_offset(bool, sa_family_t);
 const char* pgm_family_string (const int family);
 char* pgm_gsr_to_string (const struct pgm_group_source_req* gsr, char* text, size_t len);
 char* pgm_addrinfo_to_string (const struct pgm_addrinfo_t* addr, char* text, size_t len);
+char* pgm_tsi_to_address_string(pgm_sock_t const* restrict, const pgm_tsi_t *restrict, char* text, size_t len);
+
 
 PGM_END_DECLS
 

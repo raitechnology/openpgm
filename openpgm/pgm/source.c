@@ -22,6 +22,13 @@
 #ifdef HAVE_CONFIG_H
 #	include <config.h>
 #endif
+
+//#define SOURCE_DEBUG
+
+#ifndef SOURCE_DEBUG
+#	define PGM_DISABLE_ASSERT
+#endif
+
 #include <errno.h>
 #include <impl/i18n.h>
 #include <impl/framework.h>
@@ -30,13 +37,6 @@
 #include <impl/sqn_list.h>
 #include <impl/packet_parse.h>
 #include <impl/net.h>
-
-
-//#define SOURCE_DEBUG
-
-#ifndef SOURCE_DEBUG
-#	define PGM_DISABLE_ASSERT
-#endif
 
 
 /* locals */
@@ -1100,8 +1100,9 @@ send_odata (
 	size_t*			    restrict bytes_written
 	)
 {
-	void	*data;
-	ssize_t	 sent;
+	void	 * data;
+	ssize_t	   sent;
+	pgm_time_t tstamp;
 
 /* pre-conditions */
 	pgm_assert (NULL != sock);
@@ -1116,15 +1117,16 @@ send_odata (
 	const size_t      tpdu_length  = tsdu_length + pgm_pkt_offset (FALSE, pgmcc_family);
 
 /* continue if send would block */
+	tstamp = pgm_time_update_now();
 	if (sock->is_apdu_eagain) {
-		STATE(skb)->tstamp = pgm_time_update_now();
+		STATE(skb)->tstamp = tstamp;
 		goto retry_send;
 	}
 
 /* add PGM header to skbuff */
 	STATE(skb) = pgm_skb_get(skb);
 	STATE(skb)->sock = sock;
-	STATE(skb)->tstamp = pgm_time_update_now();
+	STATE(skb)->tstamp = tstamp;
 
 	STATE(skb)->pgm_header = (struct pgm_header*)STATE(skb)->head;
 	STATE(skb)->pgm_data   = (struct pgm_data*)(STATE(skb)->pgm_header + 1);
@@ -1160,7 +1162,7 @@ send_odata (
 		opt_header->opt_length	= sizeof (struct pgm_opt_header) +
 						opt_pgmcc_data_len;
 		pgmcc_data  = (struct pgm_opt_pgmcc_data *)(opt_header + 1);
-		pgmcc_data->opt_tstamp = pgm_htonl ((uint32_t)pgm_to_msecs (STATE(skb)->tstamp));
+		pgmcc_data->opt_tstamp = pgm_htonl ((uint32_t)pgm_to_msecs (tstamp));
 /* acker nla */
 		pgm_sockaddr_to_nla ((struct sockaddr*)&sock->acker_nla, (char*)&pgmcc_data->opt_nla_afi);
 		data = (char*)opt_header + opt_header->opt_length;
@@ -1172,7 +1174,7 @@ send_odata (
 
 /* add to transmit window, skb::data set to payload */
 	pgm_spinlock_lock (&sock->txw_spinlock);
-	pgm_txw_add (sock->window, STATE(skb));
+	pgm_txw_add (sock->window, STATE(skb), tstamp);
 	pgm_spinlock_unlock (&sock->txw_spinlock);
 
 /* check rate limit at last moment */
@@ -1232,11 +1234,11 @@ retry_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	reset_heartbeat_spm (sock, tstamp);
 /* congestion control: remove token from bucket */
 	if (sock->use_pgmcc) {
 		sock->tokens -= pgm_fp8 (1);
-		sock->ack_expiry = STATE(skb)->tstamp + sock->ack_expiry_ivl;
+		sock->ack_expiry = tstamp + sock->ack_expiry_ivl;
 	}
 /* save unfolded odata for retransmissions */
 	pgm_txw_set_unfolded_checksum (STATE(skb), STATE(unfolded_odata));
@@ -1276,8 +1278,9 @@ send_odata_copy (
 	size_t*		       restrict	bytes_written
 	)
 {
-	void	*data;
-	ssize_t	 sent;
+	void	 * data;
+	ssize_t	   sent;
+	pgm_time_t tstamp;
 
 /* pre-conditions */
 	pgm_assert (NULL != sock);
@@ -1291,14 +1294,15 @@ send_odata_copy (
 	const size_t      tpdu_length  = tsdu_length + pgm_pkt_offset (FALSE, pgmcc_family);
 
 /* continue if blocked mid-apdu, updating timestamp */
+	tstamp = pgm_time_update_now();
 	if (sock->is_apdu_eagain) {
-		STATE(skb)->tstamp = pgm_time_update_now();
+		STATE(skb)->tstamp = tstamp;
 		goto retry_send;
 	}
 
 	STATE(skb) = pgm_alloc_skb (sock->max_tpdu);
 	STATE(skb)->sock = sock;
-	STATE(skb)->tstamp = pgm_time_update_now();
+	STATE(skb)->tstamp = tstamp;
 	pgm_skb_reserve (STATE(skb), (uint16_t)pgm_pkt_offset (FALSE, pgmcc_family));
 	pgm_skb_put (STATE(skb), (uint16_t)tsdu_length);
 
@@ -1337,7 +1341,7 @@ send_odata_copy (
 						opt_pgmcc_data_len;
 		pgmcc_data  = (struct pgm_opt_pgmcc_data *)(opt_header + 1);
 		pgmcc_data->opt_reserved = 0;
-		pgmcc_data->opt_tstamp = pgm_htonl ((uint32_t)pgm_to_msecs (STATE(skb)->tstamp));
+		pgmcc_data->opt_tstamp = pgm_htonl ((uint32_t)pgm_to_msecs (tstamp));
 /* acker nla */
 		pgm_sockaddr_to_nla ((struct sockaddr*)&sock->acker_nla, (char*)&pgmcc_data->opt_nla_afi);
 		data = (char*)opt_header + opt_header->opt_length;
@@ -1349,7 +1353,7 @@ send_odata_copy (
 
 /* add to transmit window, skb::data set to payload */
 	pgm_spinlock_lock (&sock->txw_spinlock);
-	pgm_txw_add (sock->window, STATE(skb));
+	pgm_txw_add (sock->window, STATE(skb), tstamp);
 	pgm_spinlock_unlock (&sock->txw_spinlock);
 
 /* check rate limit at last moment */
@@ -1405,13 +1409,13 @@ retry_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	reset_heartbeat_spm (sock, tstamp);
 /* congestion control: remove token from bucket */
 	if (sock->use_pgmcc) {
 		sock->tokens -= pgm_fp8 (1);
 		pgm_trace (PGM_LOG_ROLE_CONGESTION_CONTROL,_("PGMCC tokens-- (T:%u W:%u)"),
 		 	   pgm_fp8tou (sock->tokens), pgm_fp8tou (sock->cwnd_size));
-		sock->ack_expiry = STATE(skb)->tstamp + sock->ack_expiry_ivl;
+		sock->ack_expiry = tstamp + sock->ack_expiry_ivl;
 	}
 /* save unfolded odata for retransmissions */
 	pgm_txw_set_unfolded_checksum (STATE(skb), STATE(unfolded_odata));
@@ -1455,9 +1459,10 @@ send_odatav (
 	size_t*		 	      restrict bytes_written
 	)
 {
-	char		*dst;
-	size_t		 tpdu_length;
-	ssize_t		 sent;
+	char     * dst;
+	size_t     tpdu_length;
+	ssize_t	   sent;
+	pgm_time_t tstamp;
 
 /* pre-conditions */
 	pgm_assert (NULL != sock);
@@ -1471,6 +1476,7 @@ send_odatav (
 		return send_odata_copy (sock, NULL, 0, bytes_written);
 
 /* continue if blocked on send */
+	tstamp = pgm_time_update_now();
 	if (sock->is_apdu_eagain) {
 		pgm_assert ((char*)STATE(skb)->tail > (char*)STATE(skb)->head);
 		tpdu_length = (char*)STATE(skb)->tail - (char*)STATE(skb)->head;
@@ -1491,7 +1497,7 @@ send_odatav (
 
 	STATE(skb) = pgm_alloc_skb (sock->max_tpdu);
 	STATE(skb)->sock = sock;
-	STATE(skb)->tstamp = pgm_time_update_now();
+	STATE(skb)->tstamp = tstamp;
 	const sa_family_t pgmcc_family = sock->use_pgmcc ? sock->family : 0;
 	pgm_skb_reserve (STATE(skb), (uint16_t)pgm_pkt_offset (FALSE, pgmcc_family));
 	pgm_skb_put (STATE(skb), (uint16_t)STATE(tsdu_length));
@@ -1528,7 +1534,7 @@ send_odatav (
 
 /* add to transmit window, skb::data set to payload */
 	pgm_spinlock_lock (&sock->txw_spinlock);
-	pgm_txw_add (sock->window, STATE(skb));
+	pgm_txw_add (sock->window, STATE(skb), tstamp);
 	pgm_spinlock_unlock (&sock->txw_spinlock);
 
 	pgm_assert ((char*)STATE(skb)->tail > (char*)STATE(skb)->head);
@@ -1577,7 +1583,7 @@ retry_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	reset_heartbeat_spm (sock, tstamp);
 /* save unfolded odata for retransmissions */
 	pgm_txw_set_unfolded_checksum (STATE(skb), STATE(unfolded_odata));
 /* increment socket statistics */
@@ -1621,6 +1627,7 @@ send_apdu (
 	unsigned	packets_sent = 0;	/* IP packets */
 	size_t		data_bytes_sent = 0;
 	int		save_errno;
+	pgm_time_t	tstamp = 0;
 
 	pgm_assert (NULL != sock);
 	pgm_assert (NULL != apdu);
@@ -1671,7 +1678,8 @@ send_apdu (
 
 		STATE(skb) = pgm_alloc_skb (sock->max_tpdu);
 		STATE(skb)->sock = sock;
-		STATE(skb)->tstamp = pgm_time_update_now();
+		tstamp = pgm_time_update_now();
+		STATE(skb)->tstamp = tstamp;
 		pgm_skb_reserve (STATE(skb), (uint16_t)header_length);
 		pgm_skb_put (STATE(skb), (uint16_t)STATE(tsdu_length));
 
@@ -1715,7 +1723,7 @@ send_apdu (
 
 /* add to transmit window, skb::data set to payload */
 		pgm_spinlock_lock (&sock->txw_spinlock);
-		pgm_txw_add (sock->window, STATE(skb));
+		pgm_txw_add (sock->window, STATE(skb), tstamp);
 		pgm_spinlock_unlock (&sock->txw_spinlock);
 
 retry_send:
@@ -1765,7 +1773,9 @@ retry_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	if (tstamp == 0)
+		tstamp = STATE(skb)->tstamp;
+	reset_heartbeat_spm (sock, tstamp);
 /* increment socket statistics */
 	pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 	sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
@@ -1776,7 +1786,7 @@ retry_send:
 
 blocked:
 	if (bytes_sent) {
-		reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+		reset_heartbeat_spm (sock, tstamp);
 		pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_BYTES_SENT] += data_bytes_sent;
@@ -1876,6 +1886,7 @@ pgm_sendv (
 	size_t		bytes_sent = 0;
 	size_t		data_bytes_sent = 0;
 	int		save_errno;
+	pgm_time_t	tstamp = 0;
 
 	pgm_debug ("pgm_sendv (sock:%p vector:%p count:%u is-one-apdu:%s bytes-written:%p)",
 		(const void*)sock,
@@ -2045,7 +2056,8 @@ retry_send:
 		STATE(tsdu_length) = MIN( source_max_tsdu (sock, TRUE), STATE(apdu_length) - STATE(data_bytes_offset) );
 		STATE(skb) = pgm_alloc_skb (sock->max_tpdu);
 		STATE(skb)->sock = sock;
-		STATE(skb)->tstamp = pgm_time_update_now();
+		tstamp = pgm_time_update_now();
+		STATE(skb)->tstamp = tstamp;
 		pgm_skb_reserve (STATE(skb), (uint16_t)header_length);
 		pgm_skb_put (STATE(skb), (uint16_t)STATE(tsdu_length));
 
@@ -2127,7 +2139,7 @@ retry_send:
 
 /* add to transmit window, skb::data set to payload */
 		pgm_spinlock_lock (&sock->txw_spinlock);
-		pgm_txw_add (sock->window, STATE(skb));
+		pgm_txw_add (sock->window, STATE(skb), tstamp);
 		pgm_spinlock_unlock (&sock->txw_spinlock);
 
 retry_one_apdu_send:
@@ -2176,7 +2188,9 @@ retry_one_apdu_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	if (tstamp == 0)
+		tstamp = STATE(skb)->tstamp;
+	reset_heartbeat_spm (sock, tstamp);
 /* increment socket statistics */
 	pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 	sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
@@ -2189,7 +2203,7 @@ retry_one_apdu_send:
 
 blocked:
 	if (bytes_sent) {
-		reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+		reset_heartbeat_spm (sock, tstamp);
 		pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_BYTES_SENT] += data_bytes_sent;
@@ -2227,6 +2241,7 @@ pgm_send_skbv (
 	size_t		bytes_sent = 0;
 	size_t		data_bytes_sent = 0;
 	int		save_errno;
+	pgm_time_t	tstamp = 0;
 
 	pgm_debug ("pgm_send_skbv (sock:%p vector:%p count:%u is-one-apdu:%s bytes-written:%p)",
 		(const void*)sock,
@@ -2321,7 +2336,8 @@ pgm_send_skbv (
 		
 		STATE(skb) = pgm_skb_get(vector[STATE(vector_index)]);
 		STATE(skb)->sock = sock;
-		STATE(skb)->tstamp = pgm_time_update_now();
+		tstamp = pgm_time_update_now();
+		STATE(skb)->tstamp = tstamp;
 
 		STATE(skb)->pgm_header = (struct pgm_header*)STATE(skb)->head;
 		STATE(skb)->pgm_data   = (struct pgm_data*)(STATE(skb)->pgm_header + 1);
@@ -2376,7 +2392,7 @@ pgm_send_skbv (
 
 /* add to transmit window, skb::data set to payload */
 		pgm_spinlock_lock (&sock->txw_spinlock);
-		pgm_txw_add (sock->window, STATE(skb));
+		pgm_txw_add (sock->window, STATE(skb), tstamp);
 		pgm_spinlock_unlock (&sock->txw_spinlock);
 retry_send:
 		pgm_assert ((char*)STATE(skb)->tail > (char*)STATE(skb)->head);
@@ -2431,7 +2447,9 @@ retry_send:
 /* success */
 	sock->is_apdu_eagain = FALSE;
 /* SPM heartbeats decay from last sent data packet */
-	reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+	if (tstamp == 0)
+		tstamp = STATE(skb)->tstamp;
+	reset_heartbeat_spm (sock, tstamp);
 /* increment socket statistics */
 	pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 	sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
@@ -2444,7 +2462,7 @@ retry_send:
 
 blocked:
 	if (bytes_sent) {
-		reset_heartbeat_spm (sock, STATE(skb)->tstamp);
+		reset_heartbeat_spm (sock, tstamp);
 		pgm_atomic_add32 (&sock->cumulative_stats[PGM_PC_SOURCE_BYTES_SENT], (uint32_t)bytes_sent);
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_MSGS_SENT]  += packets_sent;
 		sock->cumulative_stats[PGM_PC_SOURCE_DATA_BYTES_SENT] += data_bytes_sent;

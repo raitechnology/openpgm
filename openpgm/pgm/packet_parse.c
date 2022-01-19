@@ -22,16 +22,16 @@
 #ifdef HAVE_CONFIG_H
 #	include <config.h>
 #endif
-#include <impl/i18n.h>
-#include <impl/framework.h>
-#include <impl/packet_parse.h>
-
-
 //#define PACKET_DEBUG
 
 #ifndef PACKET_DEBUG
 #	define PGM_DISABLE_ASSERT
 #endif
+
+#include <impl/i18n.h>
+#include <impl/framework.h>
+#include <impl/packet_parse.h>
+
 
 
 /* locals */

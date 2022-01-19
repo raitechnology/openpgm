@@ -23,6 +23,12 @@
 #ifdef HAVE_CONFIG_H
 #	include <config.h>
 #endif
+#define SOCK_DEBUG
+//#define SOCK_SPM_DEBUG
+#ifndef SOCK_DEBUG
+#       define PGM_DISABLE_ASSERT
+#endif
+
 #include <errno.h>
 #ifdef HAVE_POLL
 #	include <poll.h>
@@ -37,10 +43,6 @@
 #include <impl/receiver.h>
 #include <impl/source.h>
 #include <impl/timer.h>
-
-
-#define SOCK_DEBUG
-//#define SOCK_SPM_DEBUG
 
 
 /* global locals */
@@ -2840,6 +2842,148 @@ pgm_family_string (
         }
 
         return c;
+}
+
+#define print_stat( v ) \
+if ( v ) printf( #v " %u\n", v )
+
+static uint32_t
+diff_stat( const uint32_t *s, uint32_t *o, int n )
+{
+  uint32_t x = s[ n ] - o[ n ];
+  o[ n ] = s[ n ];
+  return x;
+}
+
+static void
+print_source_stats( const uint32_t *stats,  uint32_t *old_stats )
+{
+    const uint32_t src_tx_current_rate    = diff_stat( stats, old_stats, PGM_PC_SOURCE_TRANSMISSION_CURRENT_RATE );
+    print_stat( src_tx_current_rate );
+    const uint32_t src_data_bytes_sent    = diff_stat( stats, old_stats, PGM_PC_SOURCE_DATA_BYTES_SENT );
+    print_stat( src_data_bytes_sent );
+    const uint32_t src_data_msgs_sent     = diff_stat( stats, old_stats, PGM_PC_SOURCE_DATA_MSGS_SENT );
+    print_stat( src_data_msgs_sent );
+    const uint32_t src_bytes_resent       = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_BYTES_RETRANSMITTED );
+    print_stat( src_bytes_resent );
+    const uint32_t src_msgs_resent        = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_MSGS_RETRANSMITTED );
+    print_stat( src_msgs_resent );
+    const uint32_t src_bytes_sent         = diff_stat( stats, old_stats, PGM_PC_SOURCE_BYTES_SENT );
+    print_stat( src_bytes_sent );
+    const uint32_t src_packets_discarded  = diff_stat( stats, old_stats, PGM_PC_SOURCE_PACKETS_DISCARDED );
+    print_stat( src_packets_discarded );
+
+    const uint32_t src_naks_recv          = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_NAKS_RECEIVED );
+    print_stat( src_naks_recv );
+    const uint32_t src_naks_ignored       = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_NAKS_IGNORED );
+    print_stat( src_naks_ignored );
+    const uint32_t src_nnak_recv          = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_NNAK_PACKETS_RECEIVED );
+    print_stat( src_nnak_recv );         
+    const uint32_t src_nnaks_received     = diff_stat( stats, old_stats, PGM_PC_SOURCE_SELECTIVE_NNAKS_RECEIVED );
+    print_stat( src_nnaks_received );
+    const uint32_t src_malformed_nnaks    = diff_stat( stats, old_stats, PGM_PC_SOURCE_NNAK_ERRORS );
+    print_stat( src_malformed_nnaks );
+
+    const uint32_t src_cksum_errors       = diff_stat( stats, old_stats, PGM_PC_SOURCE_CKSUM_ERRORS );
+    print_stat( src_cksum_errors );
+    const uint32_t src_malformed_naks     = diff_stat( stats, old_stats, PGM_PC_SOURCE_MALFORMED_NAKS );
+    print_stat( src_malformed_naks );
+    const uint32_t src_ack_errors         = diff_stat( stats, old_stats, PGM_PC_SOURCE_ACK_ERRORS );
+    print_stat( src_ack_errors );
+    const uint32_t src_ack_packets        = diff_stat( stats, old_stats, PGM_PC_SOURCE_ACK_PACKETS_RECEIVED );
+    print_stat( src_ack_packets );
+}
+
+static void
+print_receiver_stats( const uint32_t *stats,  uint32_t *old_stats )
+{
+    const uint32_t rcv_data_bytes_recv    = diff_stat( stats, old_stats, PGM_PC_RECEIVER_DATA_BYTES_RECEIVED );
+    print_stat( rcv_data_bytes_recv );
+    const uint32_t rcv_data_msgs_recv     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_DATA_MSGS_RECEIVED );
+    print_stat( rcv_data_msgs_recv );
+    const uint32_t rcv_data_msgs_lost     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_LOSSES );
+    print_stat( rcv_data_msgs_lost );
+    const uint32_t rcv_bytes_received     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_BYTES_RECEIVED );
+    print_stat( rcv_bytes_received );
+    const uint32_t rcv_packets_discarded  = diff_stat( stats, old_stats, PGM_PC_RECEIVER_PACKETS_DISCARDED );
+    print_stat( rcv_packets_discarded );
+
+    const uint32_t rcv_naks_sent          = diff_stat( stats, old_stats, PGM_PC_RECEIVER_SELECTIVE_NAKS_SENT );
+    print_stat( rcv_naks_sent );
+    const uint32_t rcv_naks_resent        = diff_stat( stats, old_stats, PGM_PC_RECEIVER_SELECTIVE_NAKS_RETRANSMITTED );
+    print_stat( rcv_naks_resent );
+    const uint32_t rcv_nak_failures       = diff_stat( stats, old_stats, PGM_PC_RECEIVER_SELECTIVE_NAKS_FAILED );
+    print_stat( rcv_nak_failures );
+    const uint32_t rcv_nak_packets_sent   = diff_stat( stats, old_stats, PGM_PC_RECEIVER_SELECTIVE_NAK_PACKETS_SENT );
+    print_stat( rcv_nak_packets_sent );
+    const uint32_t rcv_naks_suppressed    = diff_stat( stats, old_stats, PGM_PC_RECEIVER_SELECTIVE_NAKS_SUPPRESSED );
+    print_stat( rcv_naks_suppressed );
+    const uint32_t rcv_rxw_failed_adv     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAKS_FAILED_RXW_ADVANCED );
+    print_stat( rcv_rxw_failed_adv );
+    const uint32_t rcv_ncf_retries_exc    = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAKS_FAILED_NCF_RETRIES_EXCEEDED );
+    print_stat( rcv_ncf_retries_exc );
+    const uint32_t rcv_data_retries_exc   = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAKS_FAILED_DATA_RETRIES_EXCEEDED );
+    print_stat( rcv_data_retries_exc );
+    const uint32_t rcv_nak_failed_deliv   = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAK_FAILURES_DELIVERED );
+    print_stat( rcv_nak_failed_deliv );
+    const uint32_t rcv_malformed_naks     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAK_ERRORS );
+    print_stat( rcv_malformed_naks );
+    const uint32_t rcv_mean_repair_time   = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAK_SVC_TIME_MEAN );
+    print_stat( rcv_mean_repair_time );
+    const uint32_t rcv_mean_fail_time     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_NAK_FAIL_TIME_MEAN );
+    print_stat( rcv_mean_fail_time );
+
+    const uint32_t rcv_malformed_spms     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_MALFORMED_SPMS );
+    print_stat( rcv_malformed_spms );
+    const uint32_t rcv_malformed_odata    = diff_stat( stats, old_stats, PGM_PC_RECEIVER_MALFORMED_ODATA );
+    print_stat( rcv_malformed_odata );
+    const uint32_t rcv_malformed_rdata    = diff_stat( stats, old_stats, PGM_PC_RECEIVER_MALFORMED_RDATA );
+    print_stat( rcv_malformed_rdata );
+    const uint32_t rcv_malformed_ncfs     = diff_stat( stats, old_stats, PGM_PC_RECEIVER_MALFORMED_NCFS );
+    print_stat( rcv_malformed_ncfs );
+
+    const uint32_t rcv_dup_spms           = diff_stat( stats, old_stats, PGM_PC_RECEIVER_DUP_SPMS );
+    print_stat( rcv_dup_spms );
+    const uint32_t rcv_dup_data           = diff_stat( stats, old_stats, PGM_PC_RECEIVER_DUP_DATAS );
+    print_stat( rcv_dup_data );
+    const uint32_t rcv_out_of_bounds_datas= diff_stat( stats, old_stats, PGM_PC_RECEIVER_BOUNDS_DATAS );
+    print_stat( rcv_out_of_bounds_datas );
+    const uint32_t rcv_mean_transmit_count= diff_stat( stats, old_stats, PGM_PC_RECEIVER_TRANSMIT_MEAN );
+    print_stat( rcv_mean_transmit_count );
+    const uint32_t rcv_acks_sent          = diff_stat( stats, old_stats, PGM_PC_RECEIVER_ACKS_SENT );
+    print_stat( rcv_acks_sent );
+}
+
+void
+pgm_printstats( pgm_sock_t const* restrict sock,  unsigned *old_src,  unsigned *old_recv )
+{
+    pgm_peer_t * peer = sock->last_hash_value;
+    print_source_stats( sock->cumulative_stats, old_src );
+    if ( peer != NULL ) {
+	pgm_hash_t h = pgm_tsi_hash( &peer->tsi );
+	if ( old_recv[ PGM_PC_RECEIVER_MAX ] != h ) {
+	    memset( old_recv, 0, sizeof( old_recv[ 0 ] ) * PGM_PC_RECEIVER_MAX );
+	    old_recv[ PGM_PC_RECEIVER_MAX ] = h;
+	}
+	char buf[ 64 ];
+	const uint32_t rcv_window_size = pgm_rxw_length( peer->window );
+	pgm_tsi_print_r( &peer->tsi, buf, sizeof( buf ) );
+	printf( "peer %s\n", buf );
+	print_stat( rcv_window_size );
+        print_receiver_stats( (uint32_t *) peer->cumulative_stats, old_recv );
+    }
+}
+
+char *
+pgm_tsi_to_address_string( pgm_sock_t const* restrict sock, const pgm_tsi_t *restrict tsi, char* text, size_t len )
+{
+    text[ 0 ] = '\0';
+    if ( sock->peers_hashtable != NULL ) {
+        pgm_peer_t* peer = pgm_hashtable_lookup( sock->peers_hashtable, tsi );
+	if ( peer != NULL )
+		pgm_sockaddr_ntop( (struct sockaddr*) &peer->nla, text, len );
+    }
+    return text;
 }
 
 /* eof */

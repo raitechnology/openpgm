@@ -22,6 +22,13 @@
 #ifdef HAVE_CONFIG_H
 #	include <config.h>
 #endif
+//#define RECEIVER_DEBUG
+//#define SPM_DEBUG
+
+#ifndef RECEIVER_DEBUG
+#	define PGM_DISABLE_ASSERT
+#endif
+
 #include <errno.h>
 #include <impl/i18n.h>
 #include <impl/framework.h>
@@ -31,13 +38,6 @@
 #include <impl/packet_parse.h>
 #include <impl/net.h>
 
-
-//#define RECEIVER_DEBUG
-//#define SPM_DEBUG
-
-#ifndef RECEIVER_DEBUG
-#	define PGM_DISABLE_ASSERT
-#endif
 
 
 static bool send_spmr (pgm_sock_t*const restrict, pgm_peer_t*const restrict);
@@ -473,6 +473,7 @@ pgm_flush_peers_pending (
 			sock->is_reset = TRUE;
 			peer->lost_count = ((pgm_rxw_t*)peer->window)->cumulative_losses - peer->last_cumulative_losses;
 			peer->last_cumulative_losses = ((pgm_rxw_t*)peer->window)->cumulative_losses;
+			peer->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += peer->lost_count;
 		}
 
 		if (peer_bytes >= 0)
@@ -627,6 +628,7 @@ pgm_on_spm (
 			sock->is_reset = TRUE;
 			source->lost_count = source->window->cumulative_losses - source->last_cumulative_losses;
 			source->last_cumulative_losses = source->window->cumulative_losses;
+			source->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += source->lost_count;
 			pgm_peer_set_pending (sock, source);
 		}
 	}
@@ -827,6 +829,7 @@ pgm_on_peer_nak (
 		sock->is_reset = TRUE;
 		peer->lost_count = peer->window->cumulative_losses - peer->last_cumulative_losses;
 		peer->last_cumulative_losses = peer->window->cumulative_losses;
+		peer->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += peer->lost_count;
 		pgm_peer_set_pending (sock, peer);
 	}
 	return TRUE;
@@ -971,6 +974,7 @@ pgm_on_ncf (
 		sock->is_reset = TRUE;
 		source->lost_count = source->window->cumulative_losses - source->last_cumulative_losses;
 		source->last_cumulative_losses = source->window->cumulative_losses;
+		source->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += source->lost_count;
 		pgm_peer_set_pending (sock, source);
 	}
 	return TRUE;
@@ -1066,7 +1070,7 @@ send_nak (
 	pgm_assert (NULL != sock);
 	pgm_assert (NULL != source);
 
-	pgm_debug ("send_nak (sock:%p peer:%p sequence:%" PRIu32 ")",
+	pgm_debug("send_nak (sock:%p peer:%p sequence:%" PRIu32 ")",
 		(void*)sock, (void*)source, sequence);
 
 	tpdu_length = sizeof(struct pgm_header) + sizeof(struct pgm_nak);
@@ -1692,6 +1696,7 @@ pgm_trace(PGM_LOG_ROLE_NETWORK,_("nak_rpt_expiry in %f seconds."),
 			sock->is_reset = TRUE;
 			peer->lost_count = peer->window->cumulative_losses - peer->last_cumulative_losses;
 			peer->last_cumulative_losses = peer->window->cumulative_losses;
+			peer->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += peer->lost_count;
 			pgm_peer_set_pending (sock, peer);
 		}
 	}
@@ -2008,6 +2013,7 @@ nak_rpt_state (
 		sock->is_reset = TRUE;
 		peer->lost_count = peer->window->cumulative_losses - peer->last_cumulative_losses;
 		peer->last_cumulative_losses = peer->window->cumulative_losses;
+		peer->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += peer->lost_count;
 		pgm_peer_set_pending (sock, peer);
 	}
 
@@ -2126,6 +2132,7 @@ nak_rdata_state (
 		sock->is_reset = TRUE;
 		peer->lost_count = peer->window->cumulative_losses - peer->last_cumulative_losses;
 		peer->last_cumulative_losses = peer->window->cumulative_losses;
+		peer->cumulative_stats[PGM_PC_RECEIVER_LOSSES] += peer->lost_count;
 		pgm_peer_set_pending (sock, peer);
 	}
 
@@ -2201,13 +2208,14 @@ pgm_on_data (
 
 	case PGM_RXW_DUPLICATE:
 		source->cumulative_stats[PGM_PC_RECEIVER_DUP_DATAS]++;
-		goto discarded;
+		return FALSE;
 
 	case PGM_RXW_MALFORMED:
 		source->cumulative_stats[PGM_PC_RECEIVER_MALFORMED_ODATA]++;
-/* fall through */
+		return FALSE;
+
 	case PGM_RXW_BOUNDS:
-discarded:
+		source->cumulative_stats[PGM_PC_RECEIVER_BOUNDS_DATAS]++;
 		return FALSE;
 
 	default: pgm_assert_not_reached(); break;

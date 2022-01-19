@@ -27,6 +27,12 @@
 #	define _GNU_SOURCE
 #endif
 
+//#define RECV_DEBUG
+
+#ifndef RECV_DEBUG
+#	define PGM_DISABLE_ASSERT
+#endif
+
 #include <errno.h>
 #ifndef _WIN32
 #	include <sys/types.h>
@@ -43,12 +49,6 @@
 #include <impl/timer.h>
 #include <impl/engine.h>
 
-
-//#define RECV_DEBUG
-
-#ifndef RECV_DEBUG
-#	define PGM_DISABLE_ASSERT
-#endif
 
 #ifndef _WIN32
 #	define PGM_CMSG_FIRSTHDR(msg)		CMSG_FIRSTHDR(msg)
@@ -590,11 +590,13 @@ wait_for_event (
 		memset (fds, 0, sizeof(fds));
 		const int status = pgm_poll_info (sock, fds, &n_fds, POLLIN);
 		pgm_assert (-1 != status);
+		(void) status;
 #else
 		fd_set readfds;
 		FD_ZERO(&readfds);
 		const int status = pgm_select_info (sock, &readfds, NULL, &n_fds);
 		pgm_assert (-1 != status);
+		(void) status;
 #endif /* HAVE_POLL */
 
 /* flush any waiting notifications */
@@ -704,8 +706,9 @@ pgm_recvmsgv (
 				     _("Transport has been reset on unrecoverable loss from %s."),
 				     tsi);
 		}
-		if (!sock->is_abort_on_reset)
-			sock->is_reset = !sock->is_reset;
+		if (!sock->is_abort_on_reset) {
+			sock->is_reset = FALSE;
+		}
 		pgm_mutex_unlock (&sock->receiver_mutex);
 		pgm_rwlock_reader_unlock (&sock->lock);
 		return PGM_IO_STATUS_RESET;
@@ -898,8 +901,9 @@ out:
 					     _("Transport has been reset on unrecoverable loss from %s."),
 					     tsi);
 			}
-			if (!sock->is_abort_on_reset)
-				sock->is_reset = !sock->is_reset;
+			if (!sock->is_abort_on_reset) {
+				sock->is_reset = FALSE;
+			}
 			pgm_mutex_unlock (&sock->receiver_mutex);
 			pgm_rwlock_reader_unlock (&sock->lock);
 			return PGM_IO_STATUS_RESET;

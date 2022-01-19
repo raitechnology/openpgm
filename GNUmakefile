@@ -24,11 +24,13 @@ ifeq (-g,$(findstring -g,$(port_extra)))
 endif
 
 CC          ?= gcc
+CXX         ?= g++
 cc          := $(CC)
+cpp         := $(CXX)
 clink       := $(CC)
 arch_cflags := -mavx -maes -fno-omit-frame-pointer
 #gcc_wflags  := -Wall -Wextra -Werror
-gcc_wflags  := -std=c99 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-stringop-truncation -Wno-cpp
+gcc_wflags  := -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-stringop-truncation -Wno-cpp
 fpicflags   := -fPIC
 soflag      := -shared
 
@@ -44,10 +46,11 @@ else
 default_cflags := -ggdb -O3 -Ofast
 endif
 # rpmbuild uses RPM_OPT_FLAGS
-CFLAGS := $(default_cflags)
+#CFLAGS := -std=c99 $(default_cflags)
 #RPM_OPT_FLAGS ?= $(default_cflags)
 #CFLAGS ?= $(RPM_OPT_FLAGS)
-cflags := $(gcc_wflags) $(CFLAGS) $(arch_cflags)
+cflags   := $(gcc_wflags) -std=c99 $(default_cflags) $(arch_cflags)
+cppflags := $(gcc_wflags) -std=c++11 -fno-rtti -fno-exceptions $(default_cflags) $(arch_cflags)
 
 # where to find the raids/xyz.h files
 INCLUDES    ?= -Iopenpgm/pgm/include
@@ -263,6 +266,18 @@ $(objd)/%.sto: openpgm/pgm/%.c
 $(objd)/%.fpic.sto: openpgm/pgm/%.c
 	$(cc) $(cflags) $(fpicflags) $(includes) $(st_defines) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@
 
+$(objd)/%.o: openpgm/pgm/%.cpp
+	$(cpp) $(cppflags) $(includes) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@
+
+$(objd)/%.fpic.o: openpgm/pgm/%.cpp
+	$(cpp) $(fpicflags) $(cppflags) $(includes) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@
+
+$(objd)/%.sto: openpgm/pgm/%.cpp
+	$(cpp) $(cppflags) $(includes) $(st_defines) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@
+
+$(objd)/%.fpic.sto: openpgm/pgm/%.cpp
+	$(cpp) $(cppflags) $(fpicflags) $(includes) $(st_defines) $(defines) $($(notdir $*)_includes) $($(notdir $*)_defines) -c $< -o $@
+
 $(libd)/%.a:
 	ar rc $@ $($(*)_objs)
 
@@ -287,8 +302,20 @@ $(dependd)/%.fpic.d: openpgm/pgm/%.c
 	$(cc) $(arch_cflags) $(defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).fpic.o -MF $@
 
 $(dependd)/%.std: openpgm/pgm/%.c
-	$(cc) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).o -MF $@
+	$(cc) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).sto -MF $@
 
 $(dependd)/%.fpic.std: openpgm/pgm/%.c
-	$(cc) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).fpic.o -MF $@
+	$(cc) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).fpic.sto -MF $@
+
+$(dependd)/%.d: openpgm/pgm/%.cpp
+	$(cpp) $(arch_cflags) $(defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).o -MF $@
+
+$(dependd)/%.fpic.d: openpgm/pgm/%.cpp
+	$(cpp) $(arch_cflags) $(defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).fpic.o -MF $@
+
+$(dependd)/%.std: openpgm/pgm/%.cpp
+	$(cpp) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).sto -MF $@
+
+$(dependd)/%.fpic.std: openpgm/pgm/%.cpp
+	$(cpp) $(arch_cflags) $(defines) $(st_defines) $(includes) $($(notdir $*)_includes) $($(notdir $*)_defines) -MM $< -MT $(objd)/$(*).fpic.sto -MF $@
 
