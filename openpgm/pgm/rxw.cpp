@@ -10,7 +10,9 @@ extern "C" {
 #include <impl/i18n.h>
 #include <impl/framework.h>
 #include <impl/rxw.h>
-
+#ifdef _MSC_VER
+#pragma warning( disable : 4291 )
+#endif
 
 namespace {
 
@@ -33,7 +35,7 @@ struct Rxw : public pgm_rxw_t {
 
   Rxw( const pgm_tsi_t*const tsi,
        const uint16_t tpdu_size,
-       const unsigned sqns,
+       const size_t sqns,
        const unsigned secs,
        const ssize_t max_rte,
        const uint32_t ack_c_p ) { /* zero filled */
@@ -654,8 +656,8 @@ break_loop:;
   }
   if ( bytes_read > 0 ) {
     *pmsg = &msg[ i ];
-    this->bytes_delivered += bytes_read;
-    this->msgs_delivered  += msgs_read;
+    this->bytes_delivered += (uint32_t) bytes_read;
+    this->msgs_delivered  += (uint32_t) msgs_read;
     return bytes_read;
   }
   return -1;

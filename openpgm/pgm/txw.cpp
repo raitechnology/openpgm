@@ -10,7 +10,9 @@ extern "C" {
 #include <impl/i18n.h>
 #include <impl/framework.h>
 #include <impl/txw.h>
-
+#ifdef _MSC_VER
+#pragma warning( disable : 4291 )
+#endif
 
 namespace {
 
@@ -40,7 +42,7 @@ struct Txw : public pgm_txw_t {
     this->lead     = -1;
     this->trail    = 0;
     this->adv_secs = secs;
-    this->adv_sqns = sqns ? sqns : (secs * max_rte) / tpdu_size;
+    this->adv_sqns = (uint32_t) ( sqns ? sqns : (secs * max_rte) / tpdu_size );
 
     this->resize( this->adv_sqns );
   }

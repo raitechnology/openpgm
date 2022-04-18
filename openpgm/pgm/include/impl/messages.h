@@ -32,6 +32,7 @@
 #ifdef _MSC_VER
 #	include <pgm/wininttypes.h>
 #else
+#define __STDC_FORMAT_MACROS
 #	include <inttypes.h>
 #endif
 #include <pgm/zinttypes.h>

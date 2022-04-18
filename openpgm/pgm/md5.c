@@ -108,7 +108,7 @@ _pgm_md5_process_block (
 /* First increment the byte count.  RFC 1321 specifies the possible
    length of the file up to 2^64 bits.  Here we only compute the
    number of bytes.  Do a double word increment.  */
-	ctx->total[0] += len;
+	ctx->total[0] += (uint32_t) len;
 	if (ctx->total[0] < len)
 		++ctx->total[1];
 
@@ -302,7 +302,7 @@ pgm_md5_process_bytes (
 			left_over -= 64;
 			memcpy (ctx->buffer, &ctx->buffer[64], left_over);
 		}
-		ctx->buflen = left_over;
+		ctx->buflen = (uint32_t) left_over;
 	}
 }
 

@@ -30,7 +30,7 @@
 #include <impl/framework.h>
 
 #ifdef USE_GALOIS_SSE3
-#	include <x86intrin.h>
+#	include <immintrin.h>
 #endif
 
 /* Vector GF(2⁸) plus-equals multiplication.
@@ -136,7 +136,7 @@ _pgm_gf_vec_addmul (
 #ifdef USE_GALOIS_MUL_LUT
 		d[i] ^= gfmul_b[ s[i] ];
 #else
-		d[i] ^= gfmul( b, s[i] );
+		d[i] ^= pgm_gfmul( b, s[i] );
 #endif
 		i++;
 	}

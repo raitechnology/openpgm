@@ -64,8 +64,8 @@ pgm_print_packet (
 /* minimum size should be IP header plus PGM header */
 	if (len < (sizeof(struct pgm_ip) + sizeof(struct pgm_header))) 
 	{
-		printf ("Packet size too small: %" PRIzu " bytes, expecting at least %" PRIzu " bytes.\n",
-			len, sizeof(struct pgm_ip) + sizeof(struct pgm_header));
+		printf ("Packet size too small: %u bytes, expecting at least %u bytes.\n",
+		  (uint32_t) len, (uint32_t) ( sizeof(struct pgm_ip) + sizeof(struct pgm_header)));
 		return FALSE;
 	}
 
@@ -133,7 +133,7 @@ pgm_print_packet (
 		(offset & 0x1fff) * 8,
 		((offset & IP_DF) ? "DF" : ""),
 		((offset & IP_MF) ? "+" : ""));
-	printf (", length %" PRIzu "", packet_length);
+	printf (", length %u", (uint32_t) packet_length);
 
 /* IP options */
 	if ((ip_header_length - sizeof(struct pgm_ip)) > 0) {

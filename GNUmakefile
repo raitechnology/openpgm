@@ -55,41 +55,54 @@ cppflags := $(gcc_wflags) -std=c++11 -fno-rtti -fno-exceptions $(default_cflags)
 # where to find the raids/xyz.h files
 INCLUDES    ?= -Iopenpgm/pgm/include
 includes    := $(INCLUDES)
-DEFINES      ?= -D_REENTRANT \
-		-DHAVE_CLOCK_GETTIME \
-		-DHAVE_GETTIMEOFDAY \
-		-DHAVE_PTHREAD_SPINLOCK \
-		-DHAVE_GETPROTOBYNAME_R \
-		-DHAVE_GETNETENT \
-		-DHAVE_ALLOCA_H \
-		-DHAVE_EVENTFD \
-		-DHAVE_PROC_CPUINFO \
-		-DHAVE_BACKTRACE \
-		-DHAVE_DEV_RTC \
-		-DHAVE_RDTSC \
-		-DHAVE_DEV_HPET \
-		-DHAVE_POLL \
-		-DHAVE_EPOLL_CTL \
-		-DHAVE_GETIFADDRS \
-		-DHAVE_STRUCT_IFADDRS_IFR_NETMASK \
-		-DHAVE_STRUCT_GROUP_REQ \
-		-DHAVE_VASPRINTF \
-		-DUSE_BIND_INADDR_ANY \
-		-DHAVE_STRERROR_R \
-		-DSTRERROR_R_CHAR_P \
-                -D_XOPEN_SOURCE=600 \
-		-D_GNU_SOURCE \
-		-DHAVE_ISO_VARARGS \
-		-DHAVE_GNUC_VARARGS \
-		-DHAVE_STRUCT_IP_MREQN \
-		-DHAVE_SPRINTF_GROUPING \
-		-DHAVE_DSO_VISIBILITY \
-		-DUSE_TICKET_SPINLOCK \
-		-DUSE_DUMB_RWSPINLOCK \
-	        -DUSE_GALOIS_MUL_LUT \
-		-DDISABLE_IP_MULTICAST_ALL
+DEFINES     ?= -D_REENTRANT \
+	       -DHAVE_CLOCK_GETTIME \
+	       -DHAVE_GETTIMEOFDAY \
+	       -DHAVE_PTHREAD_SPINLOCK \
+	       -DHAVE_GETPROTOBYNAME_R \
+	       -DHAVE_GETNETENT \
+	       -DHAVE_ALLOCA_H \
+	       -DHAVE_EVENTFD \
+	       -DHAVE_PROC_CPUINFO \
+	       -DHAVE_BACKTRACE \
+	       -DHAVE_DEV_RTC \
+	       -DHAVE_RDTSC \
+	       -DHAVE_DEV_HPET \
+	       -DHAVE_POLL \
+	       -DHAVE_EPOLL_CTL \
+	       -DHAVE_GETIFADDRS \
+	       -DHAVE_STRUCT_IFADDRS_IFR_NETMASK \
+	       -DHAVE_STRUCT_GROUP_REQ \
+	       -DHAVE_VASPRINTF \
+	       -DUSE_BIND_INADDR_ANY \
+	       -DHAVE_STRERROR_R \
+	       -DSTRERROR_R_CHAR_P \
+	       -D_XOPEN_SOURCE=600 \
+	       -D_GNU_SOURCE \
+	       -DHAVE_ISO_VARARGS \
+	       -DHAVE_GNUC_VARARGS \
+	       -DHAVE_STRUCT_IP_MREQN \
+	       -DHAVE_SPRINTF_GROUPING \
+	       -DHAVE_DSO_VISIBILITY \
+	       -DUSE_TICKET_SPINLOCK \
+	       -DUSE_DUMB_RWSPINLOCK \
+	       -DUSE_GALOIS_MUL_LUT \
+	       -DDISABLE_IP_MULTICAST_ALL \
+	       -DUSE_GALOIS_SSE3 \
+               -DNO_PGM_NOTIFY -DNO_PGM_THREADS
+WIN_DEFS    ?= -DWIN32 \
+	       -D_CRT_SECURE_NO_WARNINGS \
+	       -D_WINSOCK_DEPRECATED_NO_WARNINGS \
+	       -DHAVE_FTIME \
+	       -DHAVE_ISO_VARARGS \
+	       -DHAVE_RDTSC \
+	       -DHAVE_WSACMSGHDR \
+	       -DHAVE_DSO_VISIBILITY \
+	       -DUSE_BIND_INADDR_ANY \
+	       -DUSE_GALOIS_SSE3 \
+               -DNO_PGM_NOTIFY -DNO_PGM_THREADS
 defines     := $(DEFINES)
-st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS
+#st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS
 sock_lib    :=
 math_lib    := -lm
 thread_lib  := -pthread -lrt
@@ -127,17 +140,20 @@ openpgm/pgm/galois_tables.c: openpgm/pgm/galois_generator.pl
 openpgm/pgm/version.c: openpgm/pgm/version_generator.py
 	python openpgm/pgm/version_generator.py > openpgm/pgm/version.c
 
-libopenpgm_files = \
+libopenpgm_files1 := \
                 cpu thread mem string list slist queue hashtable \
                 messages error math packet_parse packet_test \
                 sockaddr time if inet_lnaof getifaddrs get_nprocs \
                 getnetbyname getnodeaddr getprotobyname indextoaddr \
                 indextoname nametoindex inet_network md5 rand \
-                gsi tsi txw rxw skbuff socket source receiver \
+                gsi tsi skbuff socket source receiver \
                 recv engine timer net rate_control checksum \
                 reed_solomon galois_tables wsastrerror histogram \
 		atomic version
-
+libopenpgm_files2 := rxw txw
+libopenpgm_files := $(libopenpgm_files1) $(libopenpgm_files2)
+libopenpgm_cfile := $(addprefix openpgm/pgm/, $(addsuffix .c, $(libopenpgm_files1))) \
+                    $(addprefix openpgm/pgm/, $(addsuffix .cpp, $(libopenpgm_files2)))
 libopenpgm_objs  := $(addprefix $(objd)/, $(addsuffix .o, $(libopenpgm_files)))
 libopenpgm_dbjs  := $(addprefix $(objd)/, $(addsuffix .fpic.o, $(libopenpgm_files)))
 libopenpgm_deps  := $(addprefix $(dependd)/, $(addsuffix .d, $(libopenpgm_files))) \
@@ -150,9 +166,9 @@ $(libd)/libopenpgm.a: $(libopenpgm_objs)
 
 $(libd)/libopenpgm.$(dll): $(libopenpgm_dbjs)
 
-all_depends += $(libopenpgm_deps)
-all_dirs    += $(bind) $(libd) $(objd) $(dependd)
-all_libs    += $(libd)/libopenpgm.a $(libd)/libopenpgm.$(dll)
+#all_depends += $(libopenpgm_deps)
+#all_dirs    += $(bind) $(libd) $(objd) $(dependd)
+#all_libs    += $(libd)/libopenpgm.a $(libd)/libopenpgm.$(dll)
 
 libopenpgm_st_objs  := $(addprefix $(objd)/, $(addsuffix .sto, $(libopenpgm_files)))
 libopenpgm_st_dbjs  := $(addprefix $(objd)/, $(addsuffix .fpic.sto, $(libopenpgm_files)))
@@ -174,7 +190,36 @@ all_dirs := $(bind) $(libd) $(objd) $(dependd)
 
 # the default targets
 .PHONY: all
-all: $(all_libs) $(all_dlls) $(all_exes)
+all: $(all_libs) $(all_dlls) $(all_exes) cmake
+
+.PHONY: cmake
+cmake: CMakeLists.txt
+
+.ONESHELL: CMakeLists.txt
+CMakeLists.txt: .copr/Makefile
+	@cat <<'EOF' > $@
+	cmake_minimum_required (VERSION 3.9.0)
+	if (POLICY CMP0111)
+	  cmake_policy(SET CMP0111 OLD)
+	endif ()
+	project (openpgm)
+	include_directories (
+	  openpgm/pgm/include
+	)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	  if ($$<CONFIG:Release>)
+	    add_compile_options (/arch:AVX2 /GL /std:c11 /wd5105)
+	  else ()
+	    add_compile_options (/arch:AVX2 /std:c11 /wd5105)
+	  endif ()
+	  add_definitions ($(WIN_DEFS))
+	else ()
+	  set (CMAKE_C_FLAGS "$(cflags)")
+	  set (CMAKE_CXX_FLAGS "$(cppflags)")
+	  add_definitions ($(DEFINES))
+	endif ()
+	add_library (openpgm_st STATIC $(libopenpgm_cfile))
+	EOF
 
 .PHONY: dnf_depend
 dnf_depend:

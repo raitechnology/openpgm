@@ -62,7 +62,7 @@
 #		include <pgm/winint.h>
 #	endif
 #	if !defined( PGM_SSIZE_T_DEFINED )
-#		define ssize_t		SSIZE_T
+#		define ssize_t		ptrdiff_t
 #		define PGM_SSIZE_T_DEFINED
 #	endif
 #	if !defined( PGM_INLINE_DEFINED )
