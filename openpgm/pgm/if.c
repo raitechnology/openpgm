@@ -1,5 +1,4 @@
-/* vim:ts=8:sts=8:sw=4:noai:noexpandtab
- *
+/*
  * network interface handling.
  *
  * Copyright (c) 2006-2012 Miru Limited.
@@ -368,616 +367,666 @@ is_in_net6 (
  * returns TRUE on success, FALSE on error and sets error appropriately.
  */
 
-static
-bool
-parse_interface (
-	int				family,			/* AF_UNSPEC | AF_INET | AF_INET6 */
-	const char*	      restrict	ifname,			/* NULL terminated */
-	struct interface_req* restrict	ir,			/* location to write interface details to */
-	pgm_error_t**	      restrict	error
-	)
+static bool
+parse_interface( int family, /* AF_UNSPEC | AF_INET | AF_INET6 */
+                 const char* restrict ifname,       /* NULL terminated */
+                 struct interface_req* restrict ir, /* location to write
+                                                       interface details to */
+                 pgm_error_t** restrict error )
 {
-	bool check_inet_network = FALSE, check_inet6_network = FALSE;
-	bool check_addr = FALSE;
-	bool check_ifname = FALSE;
-	char literal[1024];
-	struct in_addr in_addr;
-	struct sockaddr_in6 sa6_addr;
-	struct pgm_ifaddrs_t *ifap, *ifa;
-	struct sockaddr_storage addr_storage, *addr = &addr_storage;
-	unsigned addr_cnt = 1, interface_matches = 0;
+  bool                  check_inet_network = FALSE, check_inet6_network = FALSE;
+  bool                  check_addr   = FALSE;
+  bool                  check_ifname = FALSE;
+  char                  literal[ 1024 ];
+  struct in_addr        in_addr;
+  struct sockaddr_in6   sa6_addr;
+  struct pgm_ifaddrs_t *ifap, *ifa;
+  struct sockaddr_storage addr_storage, *addr = &addr_storage;
+  unsigned                addr_cnt = 1, interface_matches = 0;
 
-/* pre-conditions */
-	pgm_assert (AF_INET == family || AF_INET6 == family || AF_UNSPEC == family);
-	pgm_assert (NULL != ifname);
-	pgm_assert (NULL != ir);
+  /* pre-conditions */
+  pgm_assert( AF_INET == family || AF_INET6 == family || AF_UNSPEC == family );
+  pgm_assert( NULL != ifname );
+  pgm_assert( NULL != ir );
 
-	pgm_debug ("parse_interface (family:%s ifname:%s%s%s ir:%p error:%p)",
-		pgm_family_string (family),
-		ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "",
-		(const void*)ir,
-		(const void*)error);
+  pgm_debug( "parse_interface (family:%s ifname:%s%s%s ir:%p error:%p)",
+             pgm_family_string( family ), ifname ? "\"" : "",
+             ifname ? ifname : "(null)", ifname ? "\"" : "", (const void*) ir,
+             (const void*) error );
 
-/* Strip any square brackets for IPv6 early evaluation.  RFC 2732 defines the
- * term "ipv6reference" for a IPv6 literal address enclosed in square brackets.
- */
-	if (AF_INET != family &&
-	    '[' == ifname[0])
-	{
-		const size_t ifnamelen = strlen (ifname);
-		if (']' == ifname[ ifnamelen - 1 ]) {
-			pgm_strncpy_s (literal, sizeof (literal), ifname + 1, ifnamelen - 2);
-			pgm_debug ("Attempting to parse interface as IPv6 literal address \"%s\".", literal);
-			family = AF_INET6;		/* force IPv6 evaluation */
-			check_inet6_network = TRUE;	/* may be a network IP or CIDR block */
-			check_addr = TRUE;		/* cannot be not a name */
-			ifname = literal;
-		}
-	}
+  /* Strip any square brackets for IPv6 early evaluation.  RFC 2732 defines the
+   * term "ipv6reference" for a IPv6 literal address enclosed in square
+   * brackets.
+   */
+  if ( AF_INET != family && '[' == ifname[ 0 ] ) {
+    const size_t ifnamelen = strlen( ifname );
+    if ( ']' == ifname[ ifnamelen - 1 ] ) {
+      pgm_strncpy_s( literal, sizeof( literal ), ifname + 1, ifnamelen - 2 );
+      pgm_debug(
+        "Attempting to parse interface as IPv6 literal address \"%s\".",
+        literal );
+      family              = AF_INET6; /* force IPv6 evaluation */
+      check_inet6_network = TRUE;     /* may be a network IP or CIDR block */
+      check_addr          = TRUE;     /* cannot be not a name */
+      ifname              = literal;
+    }
+  }
 
-/* Network address: e.g. 172.16.0.0, fc00::, or even fec0::%qe0 for scope.
- * For IPv4 use compatibiltiy API with in_addr in host byte order.
- */
-	if (AF_INET6 != family && 0 == pgm_inet_network (ifname, &in_addr))
-	{
+  /* Network address: e.g. 172.16.0.0, fc00::, or even fec0::%qe0 for scope.
+   * For IPv4 use compatibiltiy API with in_addr in host byte order.
+   */
+  if ( AF_INET6 != family && 0 == pgm_inet_network( ifname, &in_addr ) ) {
 #if defined( IF_DEBUG ) && defined( PGM_DEBUG )
-		struct in_addr t = { .s_addr = pgm_htonl (in_addr.s_addr) };
-		pgm_debug ("IPv4 network address: %s", inet_ntoa (t));
+    struct in_addr t = { .s_addr = pgm_htonl( in_addr.s_addr ) };
+    pgm_debug( "IPv4 network address: %s", inet_ntoa( t ) );
 #endif
-		if (IN_MULTICAST(in_addr.s_addr)) {
-			pgm_set_error (error,
-				     PGM_ERROR_DOMAIN_IF,
-				     PGM_ERROR_XDEV,
-				     _("Expecting network interface address, found IPv4 multicast network %s%s%s"),
-				     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-			if (NULL != error)
-				pgm_debug ("parse_interface() failed: %s", (*error)->message);
-			return FALSE;
-		}
-/* promote to sockaddr and avoid type punning */
-		struct sockaddr_in s4;
-		memset (&s4, 0, sizeof(s4));
-		s4.sin_family = AF_INET;
-		s4.sin_addr.s_addr = pgm_htonl (in_addr.s_addr);
-		memcpy (addr, &s4, sizeof(s4));
+    if ( IN_MULTICAST( in_addr.s_addr ) ) {
+      pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                     _( "Expecting network interface address, found IPv4 "
+                        "multicast network %s%s%s" ),
+                     ifname ? "\"" : "", ifname ? ifname : "(null)",
+                     ifname ? "\"" : "" );
+      if ( NULL != error )
+        pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+      return FALSE;
+    }
+    /* promote to sockaddr and avoid type punning */
+    struct sockaddr_in s4;
+    memset( &s4, 0, sizeof( s4 ) );
+    s4.sin_family      = AF_INET;
+    s4.sin_addr.s_addr = pgm_htonl( in_addr.s_addr );
+    memcpy( addr, &s4, sizeof( s4 ) );
 
-		check_inet_network = TRUE;
-		check_addr = TRUE;
-	}
-/* For IPv6 use an internal API that mimicks inet_network but works with sockaddr
- * instead of in6_addr, the promotion is required to save the scope identifier.
- */
-	if (AF_INET != family && 0 == pgm_sa6_network (ifname, &sa6_addr))
-	{
-		if (IN6_IS_ADDR_MULTICAST(&sa6_addr.sin6_addr)) {
-			pgm_set_error (error,
-				     PGM_ERROR_DOMAIN_IF,
-				     PGM_ERROR_XDEV,
-				     _("Expecting network interface address, found IPv6 multicast network %s%s%s"),
-				     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-			if (NULL != error)
-				pgm_debug ("parse_interface() failed: %s", (*error)->message);
-			return FALSE;
-		}
-		memcpy (addr, &sa6_addr, sizeof (sa6_addr));
+    check_inet_network = TRUE;
+    check_addr         = TRUE;
+  }
+  /* For IPv6 use an internal API that mimicks inet_network but works with
+   * sockaddr instead of in6_addr, the promotion is required to save the scope
+   * identifier.
+   */
+  if ( AF_INET != family && 0 == pgm_sa6_network( ifname, &sa6_addr ) ) {
+    if ( IN6_IS_ADDR_MULTICAST( &sa6_addr.sin6_addr ) ) {
+      pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                     _( "Expecting network interface address, found IPv6 "
+                        "multicast network %s%s%s" ),
+                     ifname ? "\"" : "", ifname ? ifname : "(null)",
+                     ifname ? "\"" : "" );
+      if ( NULL != error )
+        pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+      return FALSE;
+    }
+    memcpy( addr, &sa6_addr, sizeof( sa6_addr ) );
 
-		check_inet6_network = TRUE;
-		check_addr = TRUE;
-	}
+    check_inet6_network = TRUE;
+    check_addr          = TRUE;
+  }
 
-/* numeric host with scope id, e.g. abcd::1%eth0 */
-	if (!check_addr)
-	{
-		char errbuf[1024];
-		struct addrinfo hints = {
+  /* numeric host with scope id, e.g. abcd::1%eth0 */
+  if ( !check_addr ) {
+    char errbuf[ 1024 ];
+    struct addrinfo hints = {
 			.ai_family	= family,
 			.ai_socktype	= SOCK_STREAM,				/* not really, SOCK_RAW */
 			.ai_protocol	= IPPROTO_TCP,				/* not really, IPPROTO_PGM */
 			.ai_flags	= AI_ADDRCONFIG | AI_NUMERICHOST	/* AI_V4MAPPED is unhelpful */
 		}, *res;
-		const int eai = getaddrinfo (ifname, NULL, &hints, &res);
-		switch (eai) {
-		case 0:
-			if (AF_INET == res->ai_family &&
-			    IN_MULTICAST(pgm_ntohl (((struct sockaddr_in*)(res->ai_addr))->sin_addr.s_addr)))
-			{
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     PGM_ERROR_XDEV,
-					     _("Expecting interface address, found IPv4 multicast address %s%s%s"),
-					     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				freeaddrinfo (res);
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
-			else if (AF_INET6 == res->ai_family &&
-				 IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6*)res->ai_addr)->sin6_addr))
-			{
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     PGM_ERROR_XDEV,
-					     _("Expecting interface address, found IPv6 multicast address %s%s%s"),
-					     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				freeaddrinfo (res);
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
+    const int eai = getaddrinfo( ifname, NULL, &hints, &res );
+    switch ( eai ) {
+      case 0:
+        if ( AF_INET == res->ai_family &&
+             IN_MULTICAST( pgm_ntohl( ( (struct sockaddr_in*) ( res->ai_addr ) )
+                                        ->sin_addr.s_addr ) ) ) {
+          pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                         _( "Expecting interface address, found IPv4 multicast "
+                            "address %s%s%s" ),
+                         ifname ? "\"" : "", ifname ? ifname : "(null)",
+                         ifname ? "\"" : "" );
+          freeaddrinfo( res );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+        }
+        else if ( AF_INET6 == res->ai_family &&
+                  IN6_IS_ADDR_MULTICAST(
+                    &( (struct sockaddr_in6*) res->ai_addr )->sin6_addr ) ) {
+          pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                         _( "Expecting interface address, found IPv6 multicast "
+                            "address %s%s%s" ),
+                         ifname ? "\"" : "", ifname ? ifname : "(null)",
+                         ifname ? "\"" : "" );
+          freeaddrinfo( res );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+        }
 
-			memcpy (addr, res->ai_addr, pgm_sockaddr_len (res->ai_addr));
-			freeaddrinfo (res);
-			check_addr = TRUE;
-			break;
+        memcpy( addr, res->ai_addr, pgm_sockaddr_len( res->ai_addr ) );
+        freeaddrinfo( res );
+        check_addr = TRUE;
+        break;
 
-#if defined(EAI_NODATA) && EAI_NODATA != EAI_NONAME
-		case EAI_NODATA:
+#if defined( EAI_NODATA ) && EAI_NODATA != EAI_NONAME
+      case EAI_NODATA:
 #endif
-		case EAI_NONAME:
-			break;
+      case EAI_NONAME: break;
 
-		default:
-			pgm_set_error (error,
-				     PGM_ERROR_DOMAIN_IF,
-				     pgm_error_from_eai_errno (eai, errno),
-				     _("Numeric host resolution: %s(%d)"),
-				     pgm_gai_strerror_s (errbuf, sizeof (errbuf), eai),
-				     eai);
-			if (NULL != error)
-				pgm_debug ("parse_interface() failed: %s", (*error)->message);
-			return FALSE;
-		}
-	}
+      default:
+        pgm_set_error(
+          error, PGM_ERROR_DOMAIN_IF, pgm_error_from_eai_errno( eai, errno ),
+          _( "Numeric host resolution: %s(%d)" ),
+          pgm_gai_strerror_s( errbuf, sizeof( errbuf ), eai ), eai );
+        if ( NULL != error )
+          pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+        return FALSE;
+    }
+  }
 
-/* Network name into network address, can be expensive with NSS network lookup.
- * Limitation as per the man page NETWORKS(5):
- *
- * Only Class A, B or C networks are supported, partitioned networks
- * (i.e. network/26 or network/28) are not supported by this facility.
- */
-	if (!(check_inet_network || check_inet6_network))
-	{
-		const struct pgm_netent_t* ne = pgm_getnetbyname (ifname);
-/* ne::n_net in host byte order */
+  /* Network name into network address, can be expensive with NSS network
+   * lookup. Limitation as per the man page NETWORKS(5):
+   *
+   * Only Class A, B or C networks are supported, partitioned networks
+   * (i.e. network/26 or network/28) are not supported by this facility.
+   */
+  if ( !( check_inet_network || check_inet6_network ) ) {
+    const struct pgm_netent_t* ne = pgm_getnetbyname( ifname );
+    /* ne::n_net in host byte order */
 
-		if (ne) {
-			switch (ne->n_net.ss_family) {
-			case AF_INET: {
-				struct sockaddr_in sa;
-				if (AF_INET6 == family) {
-					pgm_set_error (error,
-						     PGM_ERROR_DOMAIN_IF,
-						     PGM_ERROR_NODEV,
-						     _("IP address family conflict when resolving network name %s%s%s, found AF_INET when AF_INET6 expected."),
-						     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
-				memcpy (&sa, &ne->n_net, sizeof (sa));
-/* ne->n_net in network order */
-				in_addr.s_addr = sa.sin_addr.s_addr;
-				if (IN_MULTICAST(in_addr.s_addr)) {
-					pgm_set_error (error,
-						     PGM_ERROR_DOMAIN_IF,
-						     PGM_ERROR_XDEV,
-						     _("Network name %s%s%s resolves to IPv4 mulicast address."),
-						     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
-				check_inet_network = TRUE;
-				check_addr = TRUE;
-				break;
-			}
-			case AF_INET6: {
+    if ( ne ) {
+      switch ( ne->n_net.ss_family ) {
+        case AF_INET: {
+          struct sockaddr_in sa;
+          if ( AF_INET6 == family ) {
+            pgm_set_error(
+              error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NODEV,
+              _( "IP address family conflict when resolving network name "
+                 "%s%s%s, found AF_INET when AF_INET6 expected." ),
+              ifname ? "\"" : "", ifname ? ifname : "(null)",
+              ifname ? "\"" : "" );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          memcpy( &sa, &ne->n_net, sizeof( sa ) );
+          /* ne->n_net in network order */
+          in_addr.s_addr = sa.sin_addr.s_addr;
+          if ( IN_MULTICAST( in_addr.s_addr ) ) {
+            pgm_set_error(
+              error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+              _( "Network name %s%s%s resolves to IPv4 mulicast address." ),
+              ifname ? "\"" : "", ifname ? ifname : "(null)",
+              ifname ? "\"" : "" );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          check_inet_network = TRUE;
+          check_addr         = TRUE;
+          break;
+        }
+        case AF_INET6: {
 #ifdef HAVE_GETNETENT
-				pgm_set_error (error,
-					       PGM_ERROR_DOMAIN_IF,
-					       PGM_ERROR_NODEV,
-					       _("Not configured for IPv6 network name support, %s%s%s is an IPv6 network name."),
-					       ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
+          pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NODEV,
+                         _( "Not configured for IPv6 network name support, "
+                            "%s%s%s is an IPv6 network name." ),
+                         ifname ? "\"" : "", ifname ? ifname : "(null)",
+                         ifname ? "\"" : "" );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
 #else
-				if (AF_INET == family) {
-					pgm_set_error (error,
-						     PGM_ERROR_DOMAIN_IF,
-						     PGM_ERROR_NODEV,
-						     _("IP address family conflict when resolving network name %s%s%s, found AF_INET6 when AF_INET expected."),
-						     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
-				memcpy (&sa6_addr, &ne->n_net, sizeof (sa6_addr));
-				if (IN6_IS_ADDR_MULTICAST(&sa6_addr.sin6_addr)) {
-					pgm_set_error (error,
-						     PGM_ERROR_DOMAIN_IF,
-						     PGM_ERROR_XDEV,
-						     _("Network name resolves to IPv6 mulicast address %s%s%s"),
-						     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
-				check_inet6_network = TRUE;
-				check_addr = TRUE;
-				break;
+          if ( AF_INET == family ) {
+            pgm_set_error(
+              error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NODEV,
+              _( "IP address family conflict when resolving network name "
+                 "%s%s%s, found AF_INET6 when AF_INET expected." ),
+              ifname ? "\"" : "", ifname ? ifname : "(null)",
+              ifname ? "\"" : "" );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          memcpy( &sa6_addr, &ne->n_net, sizeof( sa6_addr ) );
+          if ( IN6_IS_ADDR_MULTICAST( &sa6_addr.sin6_addr ) ) {
+            pgm_set_error(
+              error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+              _( "Network name resolves to IPv6 mulicast address %s%s%s" ),
+              ifname ? "\"" : "", ifname ? ifname : "(null)",
+              ifname ? "\"" : "" );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          check_inet6_network = TRUE;
+          check_addr          = TRUE;
+          break;
 #endif /* HAVE_GETNETENT */
-			}
-			default:
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     PGM_ERROR_NODEV,
-					     _("Network name resolves to non-internet protocol address family %s%s%s"),
-					     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
-		}
-	}
+        }
+        default:
+          pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NODEV,
+                         _( "Network name resolves to non-internet protocol "
+                            "address family %s%s%s" ),
+                         ifname ? "\"" : "", ifname ? ifname : "(null)",
+                         ifname ? "\"" : "" );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+      }
+    }
+  }
 
-/* hostname lookup with potential DNS delay or error */
-	if (!check_addr)
-	{
-		char errbuf[1024];
-		struct addrinfo hints = {
+  /* hostname lookup with potential DNS delay or error */
+  if ( !check_addr ) {
+    char errbuf[ 1024 ];
+    struct addrinfo hints = {
 			.ai_family	= family,
 			.ai_socktype	= SOCK_STREAM,		/* not really, SOCK_RAW */
 			.ai_protocol	= IPPROTO_TCP,		/* not really, IPPROTO_PGM */
 			.ai_flags	= AI_ADDRCONFIG,	/* AI_V4MAPPED is unhelpful */
 		}, *result, *res;
-		const int eai = getaddrinfo (ifname, NULL, &hints, &result);
-		switch (eai) {
-		case 0:
-/* NB: getaddrinfo may return multiple addresses, one per interface & family.
- * The sorting order of the list defined by RFC 3484 and /etc/gai.conf.
- *
- * Ex.  hinano 127.0.1.1        // default Linux DHCP address due to lack of IPv4 link-local addressing
- *      hinano 10.6.15.88       // IPv4 address provided by DHCP
- *
- * Address 127.0.1.1 should be ignored as it is not multicast capable.
- */
-			if (NULL != result->ai_next) /* more than one result */
-			{
-				addr_cnt = 0;
-				for (res = result; NULL != res; res = res->ai_next)
-				{
-					if ((AF_INET == res->ai_family && IN_MULTICAST(pgm_ntohl (((struct sockaddr_in*)(res->ai_addr))->sin_addr.s_addr))) ||
-					    (AF_INET6 == res->ai_family && IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6*)res->ai_addr)->sin6_addr)))
-						continue;
-					addr_cnt++;
-				}
-				pgm_debug ("getaddrinfo() returned %d addresses.", addr_cnt);
-				if (addr_cnt > 1) /* copy all valid entries onto the stack */
-				{
-					unsigned i = 0;
-					addr = pgm_newa (struct sockaddr_storage, addr_cnt);
-					for (res = result; NULL != res; res = res->ai_next)
-					{
-						if ((AF_INET == res->ai_family && IN_MULTICAST(pgm_ntohl (((struct sockaddr_in*)(res->ai_addr))->sin_addr.s_addr))) ||
-						    (AF_INET6 == res->ai_family && IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6*)res->ai_addr)->sin6_addr)))
-							continue;
-						memcpy (&addr[i++], res->ai_addr, pgm_sockaddr_len (res->ai_addr));
-					}
-					freeaddrinfo (result);
-/* address list complete */
-					check_addr = TRUE;
-					break;
-				}
-				else if (1 == addr_cnt) /* find matching entry */
-				{
-					for (res = result; NULL != res; res = res->ai_next)
-					{
-						if ((AF_INET == res->ai_family && IN_MULTICAST(pgm_ntohl (((struct sockaddr_in*)(res->ai_addr))->sin_addr.s_addr))) ||
-						    (AF_INET6 == res->ai_family && IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6*)res->ai_addr)->sin6_addr)))
-							continue;
-						break;
-					}
-/* verify entry was found */
-					pgm_assert (NULL != res);
-				}
-				else /* addr_cnt == 0 ∴  use last entry */
-				{
-					for (res = result; NULL != res->ai_next; res = res->ai_next);
-					addr_cnt++;
-/* verify entry is valid */
-					pgm_assert (NULL != res);
-				}
-			}
-			else
-			{
-				pgm_debug ("getaddrinfo() returned 1 address.");
-				res = result;	/* only one result */
-			}
-
-			if (AF_INET == res->ai_family &&
-			    IN_MULTICAST(pgm_ntohl (((struct sockaddr_in*)(res->ai_addr))->sin_addr.s_addr)))
-			{
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     PGM_ERROR_XDEV,
-					     _("Expecting interface address, found IPv4 multicast name %s%s%s"),
-					     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				freeaddrinfo (result);
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
-			else if (AF_INET6 == res->ai_family &&
-				 IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6*)res->ai_addr)->sin6_addr))
-			{
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     PGM_ERROR_XDEV,
-					     _("Expecting interface address, found IPv6 multicast name %s%s%s"),
-					     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-				freeaddrinfo (result);
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
-			memcpy (addr, res->ai_addr, pgm_sockaddr_len (res->ai_addr));
-			freeaddrinfo (result);
-			check_addr = TRUE;
-			break;
-
-#if defined(EAI_NODATA) && EAI_NODATA != EAI_NONAME
-		case EAI_NODATA:
+    int eai;
+    if ( pgm_getifaddrs( &ifap, error ) ) {
+      for ( ifa = ifap; ifa; ifa = ifa->ifa_next ) {
+        if ( NULL == ifa->ifa_addr )
+          continue;
+#ifdef AF_PACKET
+        if ( ifa->ifa_addr->sa_family == AF_PACKET )
+          continue;
 #endif
-		case EAI_NONAME:
-			check_ifname = TRUE;
-			break;
+        if ( ifa->ifa_addr->sa_family == AF_INET6 && family == AF_INET )
+          continue;
+        if ( ifa->ifa_addr->sa_family == AF_INET && family == AF_INET6 )
+          continue;
+        if ( 0 == strcmp( ifname, ifa->ifa_name ) )
+          break;
+      }
+      if ( ifa != NULL )
+        check_ifname = TRUE;
+      pgm_freeifaddrs( ifap );
+    }
+    if ( !check_ifname ) {
+      eai = getaddrinfo( ifname, NULL, &hints, &result );
+      switch ( eai ) {
+        case 0:
+          /* NB: getaddrinfo may return multiple addresses, one per interface &
+           * family. The sorting order of the list defined by RFC 3484 and
+           * /etc/gai.conf.
+           *
+           * Ex.  hinano 127.0.1.1        // default Linux DHCP address due to
+           * lack of IPv4 link-local addressing hinano 10.6.15.88       // IPv4
+           * address provided by DHCP
+           *
+           * Address 127.0.1.1 should be ignored as it is not multicast capable.
+           */
+          if ( NULL != result->ai_next ) /* more than one result */
+          {
+            addr_cnt = 0;
+            for ( res = result; NULL != res; res = res->ai_next ) {
+              if ( ( AF_INET == res->ai_family &&
+                     IN_MULTICAST(
+                       pgm_ntohl( ( (struct sockaddr_in*) ( res->ai_addr ) )
+                                    ->sin_addr.s_addr ) ) ) ||
+                   ( AF_INET6 == res->ai_family &&
+                     IN6_IS_ADDR_MULTICAST(
+                       &( (struct sockaddr_in6*) res->ai_addr )->sin6_addr ) ) )
+                continue;
+              addr_cnt++;
+            }
+            pgm_debug( "getaddrinfo() returned %d addresses.", addr_cnt );
+            if ( addr_cnt > 1 ) /* copy all valid entries onto the stack */
+            {
+              unsigned i = 0;
+              addr       = pgm_newa( struct sockaddr_storage, addr_cnt );
+              for ( res = result; NULL != res; res = res->ai_next ) {
+                if ( ( AF_INET == res->ai_family &&
+                       IN_MULTICAST(
+                         pgm_ntohl( ( (struct sockaddr_in*) ( res->ai_addr ) )
+                                      ->sin_addr.s_addr ) ) ) ||
+                     ( AF_INET6 == res->ai_family &&
+                       IN6_IS_ADDR_MULTICAST(
+                         &( (struct sockaddr_in6*) res->ai_addr )
+                            ->sin6_addr ) ) )
+                  continue;
+                memcpy( &addr[ i++ ], res->ai_addr,
+                        pgm_sockaddr_len( res->ai_addr ) );
+              }
+              freeaddrinfo( result );
+              /* address list complete */
+              check_addr = TRUE;
+              break;
+            }
+            else if ( 1 == addr_cnt ) /* find matching entry */
+            {
+              for ( res = result; NULL != res; res = res->ai_next ) {
+                if ( ( AF_INET == res->ai_family &&
+                       IN_MULTICAST(
+                         pgm_ntohl( ( (struct sockaddr_in*) ( res->ai_addr ) )
+                                      ->sin_addr.s_addr ) ) ) ||
+                     ( AF_INET6 == res->ai_family &&
+                       IN6_IS_ADDR_MULTICAST(
+                         &( (struct sockaddr_in6*) res->ai_addr )
+                            ->sin6_addr ) ) )
+                  continue;
+                break;
+              }
+              /* verify entry was found */
+              pgm_assert( NULL != res );
+            }
+            else /* addr_cnt == 0 ∴  use last entry */
+            {
+              for ( res = result; NULL != res->ai_next; res = res->ai_next )
+                ;
+              addr_cnt++;
+              /* verify entry is valid */
+              pgm_assert( NULL != res );
+            }
+          }
+          else {
+            pgm_debug( "getaddrinfo() returned 1 address." );
+            res = result; /* only one result */
+          }
+
+          if ( AF_INET == res->ai_family &&
+               IN_MULTICAST(
+                 pgm_ntohl( ( (struct sockaddr_in*) ( res->ai_addr ) )
+                              ->sin_addr.s_addr ) ) ) {
+            pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                           _( "Expecting interface address, found IPv4 "
+                              "multicast name %s%s%s" ),
+                           ifname ? "\"" : "", ifname ? ifname : "(null)",
+                           ifname ? "\"" : "" );
+            freeaddrinfo( result );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          else if ( AF_INET6 == res->ai_family &&
+                    IN6_IS_ADDR_MULTICAST(
+                      &( (struct sockaddr_in6*) res->ai_addr )->sin6_addr ) ) {
+            pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_XDEV,
+                           _( "Expecting interface address, found IPv6 "
+                              "multicast name %s%s%s" ),
+                           ifname ? "\"" : "", ifname ? ifname : "(null)",
+                           ifname ? "\"" : "" );
+            freeaddrinfo( result );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          memcpy( addr, res->ai_addr, pgm_sockaddr_len( res->ai_addr ) );
+          freeaddrinfo( result );
+          check_addr = TRUE;
+          break;
+
+#if defined( EAI_NODATA ) && EAI_NODATA != EAI_NONAME
+        case EAI_NODATA:
+#endif
+        case EAI_NONAME: check_ifname = TRUE; break;
 
 #ifndef _WIN32
-/* Windows does not implement EAI_SYSTEM, everything is in the WSA domain.
- * Ubuntu 13.04 returns EAI_SYSTEM+ENOENT on IPv4 whilst IPv6 on a non-
- * capable network returns EAI_SYSTEM+ETIMEDOUT for dual-stack "wlan0".
- */
-		case EAI_SYSTEM:
-			if (ENOENT == errno || ETIMEDOUT == errno) {
-				check_ifname = TRUE;
-			} else {
-				pgm_set_error (error,
-					     PGM_ERROR_DOMAIN_IF,
-					     pgm_error_from_eai_errno (eai, errno),
-					     _("Internet host resolution system error: %s(%d)"),
-					     pgm_strerror_s (errbuf, sizeof (errbuf), errno),
-					     errno);
-				if (NULL != error)
-					pgm_debug ("parse_interface() failed: %s", (*error)->message);
-				return FALSE;
-			}
-			break;
+          /* Windows does not implement EAI_SYSTEM, everything is in the WSA
+           * domain. Ubuntu 13.04 returns EAI_SYSTEM+ENOENT on IPv4 whilst IPv6
+           * on a non- capable network returns EAI_SYSTEM+ETIMEDOUT for
+           * dual-stack "wlan0".
+           */
+        case EAI_SYSTEM:
+          if ( ENOENT == errno || ETIMEDOUT == errno ) {
+            check_ifname = TRUE;
+          }
+          else {
+            pgm_set_error( error, PGM_ERROR_DOMAIN_IF,
+                           pgm_error_from_eai_errno( eai, errno ),
+                           _( "Internet host resolution system error: %s(%d)" ),
+                           pgm_strerror_s( errbuf, sizeof( errbuf ), errno ),
+                           errno );
+            if ( NULL != error )
+              pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+            return FALSE;
+          }
+          break;
 #endif
 
-		default:
-			pgm_set_error (error,
-				     PGM_ERROR_DOMAIN_IF,
-				     pgm_error_from_eai_errno (eai, errno),
-				     _("Internet host resolution: %s(%d)"),
-				     pgm_gai_strerror_s (errbuf, sizeof (errbuf), eai),
-				     eai);
-			if (NULL != error)
-				pgm_debug ("parse_interface() failed: %s", (*error)->message);
-			return FALSE;
-		}
-	}
+        default:
+          pgm_set_error(
+            error, PGM_ERROR_DOMAIN_IF, pgm_error_from_eai_errno( eai, errno ),
+            _( "Internet host resolution: %s(%d)" ),
+            pgm_gai_strerror_s( errbuf, sizeof( errbuf ), eai ), eai );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+      }
+    }
+  }
 
-/* iterate through interface list and match device name, ip or net address */
-	if (!pgm_getifaddrs (&ifap, error)) {
-		pgm_prefix_error (error,
-				_("Enumerating network interfaces: "));
-		if (NULL != error)
-			pgm_debug ("parse_interface() failed: %s", (*error)->message);
-		return FALSE;
-	}
+  /* iterate through interface list and match device name, ip or net address */
+  if ( !pgm_getifaddrs( &ifap, error ) ) {
+    pgm_prefix_error( error, _( "Enumerating network interfaces: " ) );
+    if ( NULL != error )
+      pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+    return FALSE;
+  }
 
-	for (ifa = ifap; ifa; ifa = ifa->ifa_next)
-	{
-		if (NULL == ifa->ifa_addr)
-			continue;
+  for ( ifa = ifap; ifa; ifa = ifa->ifa_next ) {
+    if ( NULL == ifa->ifa_addr )
+      continue;
 
-		switch (ifa->ifa_addr->sa_family) {
+    switch ( ifa->ifa_addr->sa_family ) {
 /* ignore raw entries on Linux */
 #ifdef AF_PACKET
-		case AF_PACKET:
-			continue;
+      case AF_PACKET: continue;
 #endif
-		case AF_INET:
-			if (AF_INET6 == family)
-				continue;
-			break;
-		case AF_INET6:
-			if (AF_INET == family)
-				continue;
-			break;
-		default:
-			continue;
-		}
+      case AF_INET:
+        if ( AF_INET6 == family )
+          continue;
+        break;
+      case AF_INET6:
+        if ( AF_INET == family )
+          continue;
+        break;
+      default: continue;
+    }
 
-		const unsigned ifindex = pgm_if_nametoindex (ifa->ifa_addr->sa_family, ifa->ifa_name);
-/* Some faulty systems may fail, handle this situation without raising an assertion. */
-		const bool has_valid_if_name = (ifindex > 0);
+    const unsigned ifindex =
+      pgm_if_nametoindex( ifa->ifa_addr->sa_family, ifa->ifa_name );
+    /* Some faulty systems may fail, handle this situation without raising an
+     * assertion. */
+    const bool has_valid_if_name = ( ifindex > 0 );
 
-/* check numeric host */
-		if (check_addr)
-		{
-			for (unsigned i = 0; i < addr_cnt; i++)
-			{
-				if (0 == pgm_sockaddr_cmp (ifa->ifa_addr, (const struct sockaddr*)&addr[i]))
-				{
-					if (!has_valid_if_name)
-						pgm_warn (_("Interface %s does not resolve to an interface index, multicast traffic will follow the systems routing table and may appear on a different network than specified."), ir->ir_name);
-					pgm_strncpy_s (ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE);
-					ir->ir_flags = ifa->ifa_flags;
-					if (ir->ir_flags & IFF_LOOPBACK)
-						pgm_warn (_("Interface %s reports as a loopback device."), ir->ir_name);
-					if (!(ir->ir_flags & IFF_MULTICAST))
-						pgm_warn (_("Interface %s reports as a non-multicast capable device."), ir->ir_name);
-					ir->ir_interface = ifindex;
-					memcpy (&ir->ir_addr, ifa->ifa_addr, pgm_sockaddr_len (ifa->ifa_addr));
-					pgm_freeifaddrs (ifap);
+    /* check numeric host */
+    if ( check_addr ) {
+      for ( unsigned i = 0; i < addr_cnt; i++ ) {
+        if ( 0 == pgm_sockaddr_cmp( ifa->ifa_addr,
+                                    (const struct sockaddr*) &addr[ i ] ) ) {
+          if ( !has_valid_if_name )
+            pgm_warn(
+              _( "Interface %s does not resolve to an interface index, "
+                 "multicast traffic will follow the systems routing table and "
+                 "may appear on a different network than specified." ),
+              ir->ir_name );
+          pgm_strncpy_s( ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE );
+          ir->ir_flags = ifa->ifa_flags;
+          if ( ir->ir_flags & IFF_LOOPBACK )
+            pgm_warn( _( "Interface %s reports as a loopback device." ),
+                      ir->ir_name );
+          if ( !( ir->ir_flags & IFF_MULTICAST ) )
+            pgm_warn(
+              _( "Interface %s reports as a non-multicast capable device." ),
+              ir->ir_name );
+          ir->ir_interface = ifindex;
+          memcpy( &ir->ir_addr, ifa->ifa_addr,
+                  pgm_sockaddr_len( ifa->ifa_addr ) );
+          pgm_freeifaddrs( ifap );
 #if defined( IF_DEBUG ) && defined( PGM_DEBUG )
-					{
-						char s[IR_STRLEN];
-						pgm_debug ("parse_interface (\"%s\") evaluated as { %s }.",
-							ifname, interface_req_to_string (ir, s, sizeof (s)));
-					}
+          {
+            char s[ IR_STRLEN ];
+            pgm_debug( "parse_interface (\"%s\") evaluated as { %s }.", ifname,
+                       interface_req_to_string( ir, s, sizeof( s ) ) );
+          }
 #endif
-					return TRUE;
-				}
-			}
-		}
+          return TRUE;
+        }
+      }
+    }
 
-/* check network address */
-		if (check_inet_network &&
-		    AF_INET == ifa->ifa_addr->sa_family)
-		{
-			const struct in_addr ifaddr  = { .s_addr = pgm_ntohl (((struct sockaddr_in*)ifa->ifa_addr)->sin_addr.s_addr) };
-			const struct in_addr netmask = { .s_addr = pgm_ntohl (((struct sockaddr_in*)ifa->ifa_netmask)->sin_addr.s_addr) };
-			struct in_addr lna;
+    /* check network address */
+    if ( check_inet_network && AF_INET == ifa->ifa_addr->sa_family ) {
+      const struct in_addr ifaddr = {
+        .s_addr =
+          pgm_ntohl( ( (struct sockaddr_in*) ifa->ifa_addr )->sin_addr.s_addr )
+      };
+      const struct in_addr netmask = {
+        .s_addr = pgm_ntohl(
+          ( (struct sockaddr_in*) ifa->ifa_netmask )->sin_addr.s_addr )
+      };
+      struct in_addr lna;
 
-/* local network address must be null, otherwise should match an address is previous check */
-			if (!pgm_inet_lnaof (&lna, &in_addr, &netmask) &&
-				is_in_net (&ifaddr, &in_addr, &netmask))
-			{
-				if (!has_valid_if_name) {
-					pgm_warn (_("Skipping matching network device %s that fails reverse interface name lookup."), ir->ir_name);
-					goto skip_inet_network;
-				}
-				pgm_strncpy_s (ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE);
-				ir->ir_flags = ifa->ifa_flags;
-				if (ir->ir_flags & IFF_LOOPBACK) {
-					pgm_warn (_("Skipping matching loopback network device %s."), ir->ir_name);
-					goto skip_inet_network;
-				}
-				if (!(ir->ir_flags & IFF_MULTICAST)) {
-					pgm_warn (_("Skipping matching non-multicast capable network device %s."), ir->ir_name);
-					goto skip_inet_network;
-				}
+      /* local network address must be null, otherwise should match an address
+       * is previous check */
+      if ( !pgm_inet_lnaof( &lna, &in_addr, &netmask ) &&
+           is_in_net( &ifaddr, &in_addr, &netmask ) ) {
+        if ( !has_valid_if_name ) {
+          pgm_warn( _( "Skipping matching network device %s that fails reverse "
+                       "interface name lookup." ),
+                    ir->ir_name );
+          goto skip_inet_network;
+        }
+        pgm_strncpy_s( ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE );
+        ir->ir_flags = ifa->ifa_flags;
+        if ( ir->ir_flags & IFF_LOOPBACK ) {
+          pgm_warn( _( "Skipping matching loopback network device %s." ),
+                    ir->ir_name );
+          goto skip_inet_network;
+        }
+        if ( !( ir->ir_flags & IFF_MULTICAST ) ) {
+          pgm_warn(
+            _( "Skipping matching non-multicast capable network device %s." ),
+            ir->ir_name );
+          goto skip_inet_network;
+        }
 
-/* check for multiple interfaces on same network */
-				if (interface_matches++) {
-					char saddr[INET_ADDRSTRLEN];
-					pgm_set_error (error,
-						     PGM_ERROR_DOMAIN_IF,
-						     PGM_ERROR_NOTUNIQ,
-						     _("Multiple interfaces found with network address %s."),
-						     pgm_inet_ntop (AF_INET, &in_addr, saddr, sizeof(saddr)));
-					pgm_freeifaddrs (ifap);
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
+        /* check for multiple interfaces on same network */
+        if ( interface_matches++ ) {
+          char saddr[ INET_ADDRSTRLEN ];
+          pgm_set_error(
+            error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NOTUNIQ,
+            _( "Multiple interfaces found with network address %s." ),
+            pgm_inet_ntop( AF_INET, &in_addr, saddr, sizeof( saddr ) ) );
+          pgm_freeifaddrs( ifap );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+        }
 
-				ir->ir_interface = ifindex;
-				memcpy (&ir->ir_addr, ifa->ifa_addr, pgm_sockaddr_len (ifa->ifa_addr));
-				continue;
-			}
-		}
-		if (check_inet6_network &&
-		    AF_INET6 == ifa->ifa_addr->sa_family &&
-/* no specified scope or matching scope */
-		    (	0 == sa6_addr.sin6_scope_id ||
-			((struct sockaddr_in6*)ifa->ifa_addr)->sin6_scope_id == sa6_addr.sin6_scope_id)	)
-		{
-			const struct in6_addr ifaddr = ((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr;
-			const struct in6_addr netmask = ((struct sockaddr_in6*)ifa->ifa_netmask)->sin6_addr;
-			struct in6_addr lna;
+        ir->ir_interface = ifindex;
+        memcpy( &ir->ir_addr, ifa->ifa_addr,
+                pgm_sockaddr_len( ifa->ifa_addr ) );
+        continue;
+      }
+    }
+    if ( check_inet6_network && AF_INET6 == ifa->ifa_addr->sa_family &&
+         /* no specified scope or matching scope */
+         ( 0 == sa6_addr.sin6_scope_id ||
+           ( (struct sockaddr_in6*) ifa->ifa_addr )->sin6_scope_id ==
+             sa6_addr.sin6_scope_id ) ) {
+      const struct in6_addr ifaddr =
+        ( (struct sockaddr_in6*) ifa->ifa_addr )->sin6_addr;
+      const struct in6_addr netmask =
+        ( (struct sockaddr_in6*) ifa->ifa_netmask )->sin6_addr;
+      struct in6_addr lna;
 
-			if (!pgm_inet6_lnaof (&lna, &sa6_addr.sin6_addr, &netmask) &&
-				is_in_net6 (&ifaddr, &sa6_addr.sin6_addr, &netmask))
-			{
-				if (!has_valid_if_name) {
-					pgm_warn (_("Skipping matching network device %s that fails reverse interface name lookup."), ir->ir_name);
-					goto skip_inet_network;
-				}
-				pgm_strncpy_s (ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE);
-				ir->ir_flags = ifa->ifa_flags;
-				if (ir->ir_flags & IFF_LOOPBACK) {
-					pgm_warn (_("Skipping matching loopback network device %s."), ir->ir_name);
-					goto skip_inet_network;
-				}
-				if (!(ir->ir_flags & IFF_MULTICAST)) {
-					pgm_warn (_("Skipping matching non-multicast capable network device %s."), ir->ir_name);
-					goto skip_inet_network;
-				}
+      if ( !pgm_inet6_lnaof( &lna, &sa6_addr.sin6_addr, &netmask ) &&
+           is_in_net6( &ifaddr, &sa6_addr.sin6_addr, &netmask ) ) {
+        if ( !has_valid_if_name ) {
+          pgm_warn( _( "Skipping matching network device %s that fails reverse "
+                       "interface name lookup." ),
+                    ir->ir_name );
+          goto skip_inet_network;
+        }
+        pgm_strncpy_s( ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE );
+        ir->ir_flags = ifa->ifa_flags;
+        if ( ir->ir_flags & IFF_LOOPBACK ) {
+          pgm_warn( _( "Skipping matching loopback network device %s." ),
+                    ir->ir_name );
+          goto skip_inet_network;
+        }
+        if ( !( ir->ir_flags & IFF_MULTICAST ) ) {
+          pgm_warn(
+            _( "Skipping matching non-multicast capable network device %s." ),
+            ir->ir_name );
+          goto skip_inet_network;
+        }
 
-/* check for multiple interfaces on same network */
-				if (interface_matches++) {
-					char saddr[INET6_ADDRSTRLEN];
-					pgm_sockaddr_ntop ((struct sockaddr*)&sa6_addr, saddr, sizeof (saddr));
-					pgm_set_error (error,
-						       PGM_ERROR_DOMAIN_IF,
-						       PGM_ERROR_NOTUNIQ,
-						       _("Multiple interfaces found with network address %s."),
-						       saddr);
-					pgm_freeifaddrs (ifap);
-					if (NULL != error)
-						pgm_debug ("parse_interface() failed: %s", (*error)->message);
-					return FALSE;
-				}
+        /* check for multiple interfaces on same network */
+        if ( interface_matches++ ) {
+          char saddr[ INET6_ADDRSTRLEN ];
+          pgm_sockaddr_ntop( (struct sockaddr*) &sa6_addr, saddr,
+                             sizeof( saddr ) );
+          pgm_set_error(
+            error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NOTUNIQ,
+            _( "Multiple interfaces found with network address %s." ), saddr );
+          pgm_freeifaddrs( ifap );
+          if ( NULL != error )
+            pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+          return FALSE;
+        }
 
-				ir->ir_interface = ifindex;
-				memcpy (&ir->ir_addr, ifa->ifa_addr, pgm_sockaddr_len (ifa->ifa_addr));
-				continue;
-			}
-		}
-skip_inet_network:
+        ir->ir_interface = ifindex;
+        memcpy( &ir->ir_addr, ifa->ifa_addr,
+                pgm_sockaddr_len( ifa->ifa_addr ) );
+        continue;
+      }
+    }
+  skip_inet_network:
 
-/* check interface name */
-		if (check_ifname)
-		{
-			if (0 != strcmp (ifname, ifa->ifa_name))
-				continue;
+    /* check interface name */
+    if ( check_ifname ) {
+      if ( 0 != strcmp( ifname, ifa->ifa_name ) )
+        continue;
 
-/* skip devices that fail reverse name lookup */
-			if (!has_valid_if_name)
-				continue;
-			ir->ir_flags = ifa->ifa_flags;
-/* skip loopback and non-multicast capable devices */
-			if ((ir->ir_flags & IFF_LOOPBACK) || !(ir->ir_flags & IFF_MULTICAST))
-				continue;
+      /* skip devices that fail reverse name lookup */
+      if ( !has_valid_if_name )
+        continue;
+      ir->ir_flags = ifa->ifa_flags;
+      /* skip loopback and non-multicast capable devices */
+      if ( ( ir->ir_flags & IFF_LOOPBACK ) ||
+           !( ir->ir_flags & IFF_MULTICAST ) )
+        continue;
 
-			interface_matches++;
-			ir->ir_interface = ifindex;
-			pgm_strncpy_s (ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE);
-			if (1 == interface_matches) {
-				memcpy (&ir->ir_addr, ifa->ifa_addr, pgm_sockaddr_len (ifa->ifa_addr));
-			} else {
-/* one of many addresses, leave address undetermined. */
-				memset (&ir->ir_addr, 0, sizeof (struct sockaddr_storage));
-			}
-			continue;
-		}
-	}
+      interface_matches++;
+      ir->ir_interface = ifindex;
+      pgm_strncpy_s( ir->ir_name, IF_NAMESIZE, ifa->ifa_name, _TRUNCATE );
+      if ( 1 == interface_matches ) {
+        memcpy( &ir->ir_addr, ifa->ifa_addr,
+                pgm_sockaddr_len( ifa->ifa_addr ) );
+      }
+      else {
+        /* one of many addresses, leave address undetermined. */
+        memset( &ir->ir_addr, 0, sizeof( struct sockaddr_storage ) );
+      }
+      continue;
+    }
+  }
 
-	if (0 == interface_matches) {
-		pgm_set_error (error,
-			     PGM_ERROR_DOMAIN_IF,
-			     PGM_ERROR_NODEV,
-			     _("No matching non-loopback and multicast capable network interface %s%s%s"),
-			     ifname ? "\"" : "", ifname ? ifname : "(null)", ifname ? "\"" : "");
-		pgm_freeifaddrs (ifap);
-		if (NULL != error)
-			pgm_debug ("parse_interface() failed: %s", (*error)->message);
-		return FALSE;
-	}
+  if ( 0 == interface_matches ) {
+    pgm_set_error( error, PGM_ERROR_DOMAIN_IF, PGM_ERROR_NODEV,
+                   _( "No matching non-loopback and multicast capable network "
+                      "interface %s%s%s" ),
+                   ifname ? "\"" : "", ifname ? ifname : "(null)",
+                   ifname ? "\"" : "" );
+    pgm_freeifaddrs( ifap );
+    if ( NULL != error )
+      pgm_debug( "parse_interface() failed: %s", ( *error )->message );
+    return FALSE;
+  }
 
 #if defined( IF_DEBUG ) && defined( PGM_DEBUG )
-	{
-		char s[IR_STRLEN];
-		pgm_debug ("parse_interface (\"%s\") evaluted as { %s }.",
-			ifname, interface_req_to_string (ir, s, sizeof (s)));
-	}
+  {
+    char s[ IR_STRLEN ];
+    pgm_debug( "parse_interface (\"%s\") evaluted as { %s }.", ifname,
+               interface_req_to_string( ir, s, sizeof( s ) ) );
+  }
 #endif
-	pgm_freeifaddrs (ifap);
-	return TRUE;
+  pgm_freeifaddrs( ifap );
+  return TRUE;
 }
 
 /* parse one multicast address, conflict resolution of multiple address families of DNS multicast names is
@@ -1546,8 +1595,8 @@ resolve_interface (
 		if (!parse_interface (address_family, ir->ir_name, &resolved_interface, error))
 		{
 			pgm_prefix_error (error,
-					_("Unique address cannot be determined for interface %s%s%s: "),
-					ir->ir_name ? "\"" : "", ir->ir_name ? ir->ir_name : "(null)", ir->ir_name ? "\"" : "");
+					_("Unique address cannot be determined for interface \"%s\": "),
+					ir->ir_name );
 			if (NULL != error)
 				pgm_debug ("resolve_interface() failed: %s", (*error)->message);
 		}
@@ -1794,8 +1843,8 @@ parse_send_entity (
 			if (!parse_interface (send_gsr->gsr_group.ss_family, primary_interface->ir_name, &ir, error))
 			{
 				pgm_prefix_error (error,
-						_("Unique address cannot be determined for interface %s%s%s: "),
-						primary_interface->ir_name ? "\"":"", primary_interface->ir_name ? primary_interface->ir_name : "(null)", primary_interface->ir_name ? "\"":"");
+						_("Unique address cannot be determined for interface \"%s\": "),
+						primary_interface->ir_name );
 				pgm_free (send_gsr);
 				if (NULL != error)
 					pgm_debug ("parse_send_entity() failed: %s", (*error)->message);

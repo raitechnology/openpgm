@@ -2158,16 +2158,17 @@ pgm_bind3 (
 	if (sock->can_send_data)
 	{
 		pgm_trace (PGM_LOG_ROLE_TX_WINDOW,_("Create transmit window."));
-		sock->window = sock->txw_sqns ?
-					pgm_txw_create (&sock->tsi,
-							0,			/* MAX_TPDU */
-							sock->txw_sqns,		/* TXW_SQNS */
-							0,			/* TXW_SECS */
-							0,			/* TXW_MAX_RTE */
-							sock->use_ondemand_parity || sock->use_proactive_parity,
-							sock->rs_n,
-							sock->rs_k) :
-					pgm_txw_create (&sock->tsi,
+		sock->window = pgm_txw_create (&sock->tsi,
+						sock->max_tpdu,		/* MAX_TPDU */
+						sock->txw_sqns,		/* TXW_SQNS */
+						sock->txw_secs,		/* TXW_SECS */
+						sock->txw_max_rte,	/* TXW_MAX_RTE */
+						/*sock->use_ondemand_parity || sock->use_proactive_parity*/ false,
+						/*sock->rs_n*/ 0,
+						/*sock->rs_k*/ 0);
+#if 0
+                                      sock->txw_sqns ?
+				      : pgm_txw_create (&sock->tsi,
 							sock->max_tpdu,		/* MAX_TPDU */
 							0,			/* TXW_SQNS */
 							sock->txw_secs,		/* TXW_SECS */
@@ -2175,6 +2176,7 @@ pgm_bind3 (
 							sock->use_ondemand_parity || sock->use_proactive_parity,
 							sock->rs_n,
 							sock->rs_k);
+#endif
 		pgm_assert (NULL != sock->window);
 	}
 
