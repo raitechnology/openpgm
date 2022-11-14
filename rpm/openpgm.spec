@@ -29,7 +29,8 @@ PGM protocol
 
 %build
 make build_dir=./usr %{?_smp_mflags} dist_bins
-cp -a openpgm/pgm/include/pgm ./usr/include
+mkdir -p ./usr/include
+cp -a openpgm/pgm/include/pgm ./usr/include/pgm
 
 %install
 rm -rf %{buildroot}
