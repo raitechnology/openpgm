@@ -31,8 +31,8 @@
 
 typedef struct pgm_queue_t pgm_queue_t;
 
-#include <pgm/types.h>
-#include <pgm/list.h>
+#include <pgm_st/types.h>
+#include <pgm_st/list.h>
 
 PGM_BEGIN_DECLS
 

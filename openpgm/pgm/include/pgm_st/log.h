@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * Dump back trace to stderr and try gdb.
+ * basic logging.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,15 +22,15 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_BACKTRACE_H__
-#define __PGM_BACKTRACE_H__
+#ifndef __PGM_LOG_H__
+#define __PGM_LOG_H__
 
-#include <pgm/types.h>
+#include <pgm_st/pgm.h>
 
 PGM_BEGIN_DECLS
 
-PGM_GNUC_NORETURN void on_sigsegv (int);
+bool log_init (void);
 
 PGM_END_DECLS
 
-#endif /* __PGM_BACKTRACE_H__ */
+#endif /* __PGM_LOG_H__ */

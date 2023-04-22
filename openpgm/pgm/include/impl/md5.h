@@ -35,7 +35,7 @@
 
 struct pgm_md5_t;
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

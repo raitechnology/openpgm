@@ -35,8 +35,8 @@
 #	include <windows.h>
 #	include <io.h>
 #endif
-#include <pgm/pgm.h>
-#include "pgm/log.h"
+#include <pgm_st/pgm.h>
+#include <pgm_st/log.h>
 
 
 /* globals */

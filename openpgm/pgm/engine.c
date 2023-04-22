@@ -44,8 +44,8 @@
 #include <impl/engine.h>
 #include <impl/mem.h>
 #include <impl/socket.h>
-#include <pgm/engine.h>
-#include <pgm/version.h>
+#include <pgm_st/engine.h>
+#include <pgm_st/version.h>
 
 
 //#define ENGINE_DEBUG

@@ -23,7 +23,7 @@
 #	include <config.h>
 #endif
 #include <impl/framework.h>
-#include "pgm/skbuff.h"
+#include <pgm_st/skbuff.h>
 
 
 void

@@ -32,7 +32,7 @@
 #ifndef _WIN32
 #	include <sys/socket.h>
 #endif
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

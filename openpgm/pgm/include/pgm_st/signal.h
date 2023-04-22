@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * PGM engine.
+ * Re-entrant safe signal handling.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,19 +22,17 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_ENGINE_H__
-#define __PGM_ENGINE_H__
+#ifndef __PGM_SIGNAL_H__
+#define __PGM_SIGNAL_H__
 
-#include <pgm/types.h>
-#include <pgm/error.h>
+#include <signal.h>
 
-PGM_BEGIN_DECLS
+typedef void (*pgm_sighandler_t)(int, gpointer);
 
-bool pgm_init (pgm_error_t**);
-bool pgm_supported (void) PGM_GNUC_WARN_UNUSED_RESULT PGM_GNUC_PURE;
-bool pgm_shutdown (void);
-void pgm_drop_superuser (void);
+G_BEGIN_DECLS
 
-PGM_END_DECLS
+gboolean pgm_signal_install (int, pgm_sighandler_t, gpointer);
 
-#endif /* __PGM_ENGINE_H__ */
+G_END_DECLS
+
+#endif /* __PGM_SIGNAL_H__ */

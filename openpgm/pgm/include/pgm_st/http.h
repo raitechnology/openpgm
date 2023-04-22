@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * Re-entrant safe signal handling.
+ * HTTP administrative interface
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,18 +22,18 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_SIGNAL_H__
-#define __PGM_SIGNAL_H__
+#ifndef __PGM_HTTP_H__
+#define __PGM_HTTP_H__
 
-#include <signal.h>
-#include <glib.h>
+#include <pgm_st/pgm.h>
 
-typedef void (*pgm_sighandler_t)(int, gpointer);
+PGM_BEGIN_DECLS
 
-G_BEGIN_DECLS
+#define PGM_HTTP_DEFAULT_SERVER_PORT	4968
 
-gboolean pgm_signal_install (int, pgm_sighandler_t, gpointer);
+bool pgm_http_init (uint16_t, pgm_error_t**) PGM_GNUC_WARN_UNUSED_RESULT;
+bool pgm_http_shutdown (void);
 
-G_END_DECLS
+PGM_END_DECLS
 
-#endif /* __PGM_SIGNAL_H__ */
+#endif /* __PGM_HTTP_H__ */

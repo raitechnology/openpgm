@@ -831,9 +831,9 @@ _pgm_getadaptersaddresses (
  */
 				32 != unicast->OnLinkPrefixLength)
 			{
-				pgm_trace (PGM_LOG_ROLE_NETWORK,_("IPv6 Teredo tunneling adapter %s prefix length is an illegal value %lu, overriding to 32."),
+				pgm_trace (PGM_LOG_ROLE_NETWORK,_("IPv6 Teredo tunneling adapter %s prefix length is an illegal value %u, overriding to 32."),
 					adapter->AdapterName,
-					unicast->OnLinkPrefixLength);
+					(uint32_t) unicast->OnLinkPrefixLength);
 				prefixLength = 32;
 			}
 			else

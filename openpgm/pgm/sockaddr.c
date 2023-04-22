@@ -983,7 +983,7 @@ pgm_sockaddr_msfilter (
 	const int recv_level = (AF_INET == sa_family) ? SOL_IP : SOL_IPV6;
 	const socklen_t len = GROUP_FILTER_SIZE(gf_list->gf_numsrc);
 	retval = setsockopt (s, recv_level, MCAST_MSFILTER, (const char*)gf_list, len);
-#elif defined( _WIN32 ) && ( _WIN32_WINNT >= 0x600 )
+#elif ! defined( __MINGW32__ ) && defined( _WIN32 ) && ( _WIN32_WINNT >= 0x600 )
 /* Windows Server 2008+, note MSDN(GROUP_FILTER Structure) does not list
  * desktop support.  This contrasts to MSDN(Final-State-Based Multicast Programming)
  * which does list support for Vista+.
@@ -994,7 +994,7 @@ pgm_sockaddr_msfilter (
 	u_long* filter = pgm_alloca (len);
 	memcpy (filter, gf_list, len);
 	retval = ioctlsocket (s, SIOCSMSFILTER, filter);
-#elif defined( HAVE_STRUCT_IP_MSFILTER )
+#elif defined( __MINGW32__ ) || defined( HAVE_STRUCT_IP_MSFILTER )
 /* IPv4-only filter API alternative */
 	if (AF_INET == sa_family) {
 		const socklen_t len = IP_MSFILTER_SIZE(gf_list->gf_numsrc);

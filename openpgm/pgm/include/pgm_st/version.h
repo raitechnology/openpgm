@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * OpenPGM, an implementation of the PGM network protocol.
+ * OpenPGM version.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,32 +22,23 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_H__
-#define __PGM_H__
+#ifndef __PGM_VERSION_H__
+#define __PGM_VERSION_H__
 
-#ifdef _MSC_VER
-/* library dependencies for Visual Studio application builds */
-#	pragma comment (lib, "ws2_32")
-#	pragma comment (lib, "iphlpapi")
-#	pragma comment (lib, "winmm")
-#	pragma comment (lib, "advapi32")
-#endif
+#include <pgm_st/types.h>
 
-#include <pgm/atomic.h>
-#include <pgm/engine.h>
-#include <pgm/error.h>
-#include <pgm/gsi.h>
-#include <pgm/if.h>
-#include <pgm/macros.h>
-#include <pgm/mem.h>
-#include <pgm/messages.h>
-#include <pgm/msgv.h>
-#include <pgm/packet.h>
-#include <pgm/skbuff.h>
-#include <pgm/socket.h>
-#include <pgm/time.h>
-#include <pgm/tsi.h>
-#include <pgm/types.h>
-#include <pgm/version.h>
+PGM_BEGIN_DECLS
 
-#endif /* __PGM_H__ */
+extern const unsigned pgm_major_version;
+extern const unsigned pgm_minor_version;
+extern const unsigned pgm_micro_version;
+
+extern const char* pgm_build_date;
+extern const char* pgm_build_time;
+extern const char* pgm_build_system;
+extern const char* pgm_build_machine;
+extern const char* pgm_build_revision;
+
+PGM_END_DECLS
+
+#endif /* __PGM_VERSION_H__ */

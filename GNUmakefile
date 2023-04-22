@@ -1,10 +1,10 @@
-# defines a directory for build, for example, RH6_x86_64
+# openpgm makefile
 lsb_dist     := $(shell if [ -f /etc/os-release ] ; then \
-		  grep '^NAME=' /etc/os-release | sed 's/.*=\"//' | sed 's/ .*//' ; \
+                  grep '^NAME=' /etc/os-release | sed 's/.*=[\"]*//' | sed 's/[ \"].*//' ; \
                   elif [ -x /usr/bin/lsb_release ] ; then \
                   lsb_release -is ; else echo Linux ; fi)
 lsb_dist_ver := $(shell if [ -f /etc/os-release ] ; then \
-		  grep '^VERSION=' /etc/os-release | sed 's/.*=\"//' | sed 's/ .*//' | sed 's/\"//' ; \
+		  grep '^VERSION=' /etc/os-release | sed 's/.*=[\"]*//' | sed 's/[ \"].*//' ; \
                   elif [ -x /usr/bin/lsb_release ] ; then \
                   lsb_release -rs | sed 's/[.].*//' ; else uname -r | sed 's/[-].*//' ; fi)
 #lsb_dist     := $(shell if [ -x /usr/bin/lsb_release ] ; then lsb_release -is ; else echo Linux ; fi)
@@ -34,30 +34,44 @@ endif
 ifeq (-a,$(findstring -a,$(port_extra)))
   default_cflags := -fsanitize=address -ggdb -O3
 endif
-
+ifeq (-mingw,$(findstring -mingw,$(port_extra)))
+  CC    := /usr/bin/x86_64-w64-mingw32-gcc
+  CXX   := /usr/bin/x86_64-w64-mingw32-g++
+  mingw := true
+endif
+# msys2 using ucrt64
+ifeq (MSYS2,$(lsb_dist))
+  mingw := true
+endif
 CC          ?= gcc
 CXX         ?= g++
 cc          := $(CC)
 cpp         := $(CXX)
 clink       := $(CC)
-arch_cflags := -mavx -maes -fno-omit-frame-pointer
-#gcc_wflags  := -Wall -Wextra -Werror
+arch_cflags := -mavx2 -maes -fno-omit-frame-pointer
 gcc_wflags  := -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-stringop-truncation -Wno-cpp
-fpicflags   := -fPIC
-soflag      := -shared
-
-ifeq (Darwin,$(lsb_dist))
-dll         := dylib
+# if windows cross compile
+ifeq (true,$(mingw))
+dll       := dll
+soflag    := -shared -Wl,--subsystem,windows
+fpicflags := -fPIC -DPGM_SHARED
 else
-dll         := so
+dll       := so
+soflag    := -shared
+fpicflags := -fPIC
 endif
-
+# make apple shared lib
+ifeq (Darwin,$(lsb_dist))
+dll       := dylib
+endif
 # rpmbuild uses RPM_OPT_FLAGS
-#CFLAGS := -std=c99 $(default_cflags)
-#RPM_OPT_FLAGS ?= $(default_cflags)
-#CFLAGS ?= $(RPM_OPT_FLAGS)
-cflags   := $(gcc_wflags) -std=c99 $(default_cflags) $(arch_cflags)
-cppflags := $(gcc_wflags) -std=c++11 -fno-rtti -fno-exceptions $(default_cflags) $(arch_cflags)
+ifeq ($(RPM_OPT_FLAGS),)
+CFLAGS ?= $(default_cflags)
+else
+CFLAGS ?= $(RPM_OPT_FLAGS)
+endif
+cflags   := $(gcc_wflags) $(CFLAGS) -std=c99 $(default_cflags) $(arch_cflags)
+cppflags := $(gcc_wflags) $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions $(default_cflags) $(arch_cflags)
 
 # where to find the raids/xyz.h files
 INCLUDES    ?= -Iopenpgm/pgm/include
@@ -104,15 +118,22 @@ WIN_DEFS    ?= -DWIN32 \
 	       -DHAVE_ISO_VARARGS \
 	       -DHAVE_RDTSC \
 	       -DHAVE_WSACMSGHDR \
-	       -DHAVE_DSO_VISIBILITY \
 	       -DUSE_BIND_INADDR_ANY \
 	       -DUSE_GALOIS_SSE3 \
                -DNO_PGM_NOTIFY -DNO_PGM_THREADS
+#	       -DHAVE_DSO_VISIBILITY 
+ifeq (true,$(mingw))
+defines     := $(WIN_DEFS) -DMINGW
+sock_lib    := -lws2_32 -lwinmm -liphlpapi
+math_lib    := -lm
+thread_lib  :=
+else
 defines     := $(DEFINES)
-#st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS
 sock_lib    :=
 math_lib    := -lm
 thread_lib  := -pthread -lrt
+endif
+#st_defines  := -DNO_PGM_NOTIFY -DNO_PGM_THREADS
 
 lnk_lib     :=
 dlnk_lib    :=
@@ -281,7 +302,7 @@ dist_bins: $(all_libs)
 
 .PHONY: dist_rpm
 dist_rpm: srpm
-	( cd rpmbuild && rpmbuild --define "-topdir `pwd`" -ba SPECS/openpgm.spec )
+	( cd rpmbuild && rpmbuild --define "-topdir `pwd`" -ba SPECS/openpgm_st.spec )
 
 # dependencies made by 'make depend'
 -include $(dependd)/depend.make
@@ -333,15 +354,17 @@ $(objd)/%.fpic.sto: openpgm/pgm/%.cpp
 $(libd)/%.a:
 	ar rc $@ $($(*)_objs)
 
-$(libd)/%.so:
-	$(clink) $(soflag) $(rpath) $(cflags) -o $@.$($(*)_spec) -Wl,-soname=$(@F).$($(*)_ver) $($(*)_dbjs) $($(*)_dlnk) $(sock_lib) $(math_lib) $(thread_lib) $(malloc_lib) $(dynlink_lib) && \
-	cd $(libd) && ln -f -s $(@F).$($(*)_spec) $(@F).$($(*)_ver) && ln -f -s $(@F).$($(*)_ver) $(@F)
-
+ifeq (Darwin,$(lsb_dist))
 $(libd)/%.dylib:
 	$(clink) -dynamiclib $(cflags) -o $@.$($(*)_dylib).dylib -current_version $($(*)_dylib) -compatibility_version $($(*)_ver) $($(*)_dbjs) $($(*)_dlnk) $(sock_lib) $(math_lib) $(thread_lib) $(malloc_lib) $(dynlink_lib) && \
 	cd $(libd) && ln -f -s $(@F).$($(*)_dylib).dylib $(@F).$($(*)_ver).dylib && ln -f -s $(@F).$($(*)_ver).dylib $(@F)
+else
+$(libd)/%.$(dll):
+	$(clink) $(soflag) $(rpath) $(cflags) -o $@.$($(*)_spec) -Wl,-soname=$(@F).$($(*)_ver) $($(*)_dbjs) $($(*)_dlnk) $(sock_lib) $(math_lib) $(thread_lib) $(malloc_lib) $(dynlink_lib) && \
+	cd $(libd) && ln -f -s $(@F).$($(*)_spec) $(@F).$($(*)_ver) && ln -f -s $(@F).$($(*)_ver) $(@F)
+endif
 
-$(bind)/%:
+$(bind)/%$(exe):
 	$(clink) $(cflags) $(rpath) -o $@ $($(*)_objs) -L$(libd) $($(*)_lnk) $(sock_lib) $(math_lib) $(thread_lib) $(malloc_lib) $(dynlink_lib)
 
 $(bind)/%.static:

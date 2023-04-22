@@ -203,7 +203,7 @@ static inline
 errno_t
 pgm_dupenv_s (char **buffer, size_t *count, const char* name)
 {
-#ifndef _CRT_SECURE_NO_WARNINGS
+#if ! defined( _CRT_SECURE_NO_WARNINGS ) || defined( __MINGW32__ )
 	const char *val = getenv (name);
 /* not found */
 	if (NULL == val) {

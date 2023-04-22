@@ -36,7 +36,7 @@
 #undef	_IP_FIRSTFOUR_ONLY
 #endif
 #endif
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

@@ -29,8 +29,8 @@
 #ifndef __PGM_IMPL_LIST_H__
 #define __PGM_IMPL_LIST_H__
 
-#include <pgm/types.h>
-#include <pgm/list.h>
+#include <pgm_st/types.h>
+#include <pgm_st/list.h>
 
 PGM_BEGIN_DECLS
 

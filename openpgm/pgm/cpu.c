@@ -23,9 +23,10 @@
 #	include <config.h>
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #	include <intrin.h>
 #	include <immintrin.h>  // For _xgetbv()
+#       define PGM_WINDOWS 1
 #endif
 
 #include <impl/framework.h>
@@ -33,7 +34,7 @@
 //#define CPU_DEBUG
 
 
-#ifndef _MSC_VER
+#ifndef PGM_WINDOWS
 static
 void
 __cpuidex (int cpu_info[4], int function_id, int subfunction_id) {

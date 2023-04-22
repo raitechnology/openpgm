@@ -48,8 +48,8 @@
 #endif
 #include <glib.h>
 #include <check.h>
-#include <pgm/types.h>
-#include <pgm/macros.h>
+#include <pgm_st/types.h>
+#include <pgm_st/macros.h>
 
 
 /* mock state */

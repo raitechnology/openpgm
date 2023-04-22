@@ -29,8 +29,8 @@
 #ifndef __PGM_IMPL_HISTOGRAM_H__
 #define __PGM_IMPL_HISTOGRAM_H__
 
-#include <pgm/types.h>
-#include <pgm/time.h>
+#include <pgm_st/types.h>
+#include <pgm_st/time.h>
 #include <impl/slist.h>
 #include <impl/string.h>
 

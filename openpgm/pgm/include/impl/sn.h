@@ -34,7 +34,7 @@
 #ifndef __PGM_IMPL_SN_H__
 #define __PGM_IMPL_SN_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/messages.h>
 
 PGM_BEGIN_DECLS

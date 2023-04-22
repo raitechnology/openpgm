@@ -27,7 +27,7 @@
 
 typedef struct pgm_list_t pgm_list_t;
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

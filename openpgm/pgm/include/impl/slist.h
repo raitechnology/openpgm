@@ -31,7 +31,7 @@
 
 typedef struct pgm_slist_t pgm_slist_t;
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

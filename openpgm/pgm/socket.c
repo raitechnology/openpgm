@@ -1653,7 +1653,7 @@ pgm_setsockopt (
 					char s[INET6_ADDRSTRLEN];
 					pgm_sockaddr_ntop ((const struct sockaddr*)&gr->gr_group, s, sizeof(s));
 					if (sock->recv_gsr[i].gsr_interface) {
-						pgm_warn(_("Socket has already joined group %s on interface %u"), s, gr->gr_interface);
+						pgm_warn(_("Socket has already joined group %s on interface %u"), s, (uint32_t) gr->gr_interface);
 					} else {
 						pgm_warn(_("Socket has already joined group %s on all interfaces."), s);
 					}
@@ -1674,7 +1674,7 @@ pgm_setsockopt (
 				char s[INET6_ADDRSTRLEN];
 				pgm_sockaddr_ntop ((const struct sockaddr*)&gr->gr_group, s, sizeof(s));
 				pgm_error(_("Join multicast group { .gr_interface = %u, .gr_group = \"%s\" } failed: %s(%d)"),
-					gr->gr_interface, s,
+					(uint32_t) gr->gr_interface, s,
 					pgm_sock_strerror_s (errbuf, sizeof (errbuf), save_errno), save_errno);
 #endif
 				break;
@@ -2141,11 +2141,11 @@ pgm_bind3 (
 
 /* determine IP header size for rate regulation engine & stats */
 	sock->iphdr_len = (AF_INET == sock->family) ? sizeof(struct pgm_ip) : sizeof(struct pgm_ip6_hdr);
-	pgm_trace (PGM_LOG_ROLE_NETWORK,"Assuming IP header size of %" PRIzu " bytes", sock->iphdr_len);
+	pgm_trace (PGM_LOG_ROLE_NETWORK,"Assuming IP header size of %u bytes", (uint32_t) sock->iphdr_len);
 
 	if (sock->udp_encap_ucast_port) {
 		const size_t udphdr_len = sizeof(struct pgm_udphdr);
-		pgm_trace (PGM_LOG_ROLE_NETWORK,"Assuming UDP header size of %" PRIzu " bytes", udphdr_len);
+		pgm_trace (PGM_LOG_ROLE_NETWORK,"Assuming UDP header size of %u bytes", (uint32_t) udphdr_len);
 		sock->iphdr_len += udphdr_len;
 	}
 
@@ -2377,22 +2377,22 @@ pgm_bind3 (
 	{
 /* setup rate control */
 		if (sock->txw_max_rte > 0) {
-			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting rate regulation to %" PRIzd " bytes per second."),
-					sock->txw_max_rte);
+			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting rate regulation to %u bytes per second."),
+					(uint32_t) sock->txw_max_rte);
 			pgm_rate_create (&sock->rate_control, sock->txw_max_rte, sock->iphdr_len, sock->max_tpdu);
 			sock->is_controlled_spm   = TRUE;	/* must always be set */
 		} else
 			sock->is_controlled_spm   = FALSE;
 
 		if (sock->odata_max_rte > 0) {
-			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting ODATA rate regulation to %" PRIzd " bytes per second."),
-					sock->odata_max_rte);
+			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting ODATA rate regulation to %u bytes per second."),
+					(uint32_t) sock->odata_max_rte);
 			pgm_rate_create (&sock->odata_rate_control, sock->odata_max_rte, sock->iphdr_len, sock->max_tpdu);
 			sock->is_controlled_odata = TRUE;
 		}
 		if (sock->rdata_max_rte > 0) {
-			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting RDATA rate regulation to %" PRIzd " bytes per second."),
-					sock->rdata_max_rte);
+			pgm_trace (PGM_LOG_ROLE_RATE_CONTROL,_("Setting RDATA rate regulation to %u bytes per second."),
+					(uint32_t) sock->rdata_max_rte);
 			pgm_rate_create (&sock->rdata_rate_control, sock->rdata_max_rte, sock->iphdr_len, sock->max_tpdu);
 			sock->is_controlled_rdata = TRUE;
 		}

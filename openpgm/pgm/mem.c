@@ -162,13 +162,13 @@ pgm_malloc (
 			return mem;
 
 #ifdef __GNUC__
-		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIu64 " bytes",
 			__FILE__, __LINE__, __func__,
-			n_bytes);
+			(uint64_t) n_bytes);
 #else
-		pgm_fatal ("file %s: line %d: failed to allocate %" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d: failed to allocate %" PRIu64 " bytes",
 			__FILE__, __LINE__,
-			n_bytes);
+			(uint64_t) n_bytes);
 #endif
 		abort ();
 	}
@@ -185,13 +185,13 @@ pgm_malloc_n (
 {
 	if (SIZE_OVERFLOWS (n_blocks, block_bytes)) {
 #ifdef __GNUC__
-		pgm_fatal ("file %s: line %d (%s): overflow allocating %" PRIzu "*%" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d (%s): overflow allocating %" PRIu64 "*%" PRIu64 " bytes",
 			__FILE__, __LINE__, __func__,
-			n_blocks, block_bytes);
+			(uint64_t) n_blocks, (uint64_t) block_bytes);
 #else
-		pgm_fatal ("file %s: line %d: overflow allocating %" PRIzu "*%" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d: overflow allocating %" PRIu64 "*%" PRIu64 " bytes",
 			__FILE__, __LINE__,
-			n_blocks, block_bytes);
+			(uint64_t) n_blocks, (uint64_t) block_bytes);
 #endif
 	}
 	return pgm_malloc (n_blocks * block_bytes);
@@ -209,13 +209,13 @@ pgm_malloc0 (
 			return mem;
 
 #ifdef __GNUC__
-		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIu64 " bytes",
 			__FILE__, __LINE__, __func__,
-			n_bytes);
+			(uint64_t) n_bytes);
 #else
-		pgm_fatal ("file %s: line %d: failed to allocate %" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d: failed to allocate %" PRIu64 " bytes",
 			__FILE__, __LINE__,
-			n_bytes);
+			(uint64_t) n_bytes);
 #endif
 		abort ();
 	}
@@ -235,13 +235,13 @@ pgm_malloc0_n (
 			return mem;
 
 #ifdef __GNUC__
-		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIzu "*%" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d (%s): failed to allocate %" PRIu64 "*%" PRIu64 " bytes",
 			__FILE__, __LINE__, __func__,
-			n_blocks, block_bytes);
+			(uint64_t) n_blocks, (uint64_t) block_bytes);
 #else
-		pgm_fatal ("file %s: line %d: failed to allocate %" PRIzu "*%" PRIzu " bytes",
+		pgm_fatal ("file %s: line %d: failed to allocate %" PRIu64 "*%" PRIu64 " bytes",
 			__FILE__, __LINE__,
-			n_blocks, block_bytes);
+			(uint64_t) n_blocks, (uint64_t) block_bytes);
 #endif
 		abort ();
 	}

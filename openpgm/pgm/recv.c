@@ -1016,8 +1016,8 @@ pgm_recvfrom (
 	while (bytes_copied < bytes_read) {
 		size_t copy_len = pskb->len;
 		if (bytes_copied + copy_len > buflen) {
-			pgm_warn (_("APDU truncated, original length %" PRIzu " bytes."),
-				bytes_read);
+			pgm_warn (_("APDU truncated, original length %u bytes."),
+				(uint32_t) bytes_read);
 			copy_len = buflen - bytes_copied;
 			bytes_read = buflen;
 		}

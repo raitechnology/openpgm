@@ -36,9 +36,9 @@
 #endif
 #if defined( __APPLE__ ) || defined( __FreeBSD__ ) || defined(_AIX) || defined(__NetBSD__)
 /* incomplete RFC 3678 API support */
-#	include <pgm/in.h>
+#	include <pgm_st/in.h>
 #endif
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/security.h>
 #include <impl/wsastrerror.h>
 

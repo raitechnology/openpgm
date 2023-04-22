@@ -34,8 +34,8 @@
 #	include <sys/socket.h>
 #	include <netdb.h>
 #endif
-#include <pgm/types.h>
-#include <pgm/error.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
 
 PGM_BEGIN_DECLS
 

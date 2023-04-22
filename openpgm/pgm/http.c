@@ -37,10 +37,10 @@
 #include <impl/framework.h>
 #include <impl/receiver.h>
 #include <impl/socket.h>
-#include <pgm/if.h>
-#include <pgm/version.h>
+#include <pgm_st/if.h>
+#include <pgm_st/version.h>
 
-#include "pgm/http.h"
+#include "pgm_st/http.h"
 #include "htdocs/404.html.h"
 #include "htdocs/base.css.h"
 #include "htdocs/robots.txt.h"

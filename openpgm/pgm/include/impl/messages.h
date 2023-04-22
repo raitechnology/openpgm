@@ -30,16 +30,16 @@
 #define __PGM_IMPL_MESSAGES_H__
 
 #ifdef _MSC_VER
-#	include <pgm/wininttypes.h>
+#	include <pgm_st/wininttypes.h>
 #else
 #define __STDC_FORMAT_MACROS
 #	include <inttypes.h>
 #endif
-#include <pgm/zinttypes.h>
+#include <pgm_st/zinttypes.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <pgm/types.h>
-#include <pgm/messages.h>
+#include <pgm_st/types.h>
+#include <pgm_st/messages.h>
 
 PGM_BEGIN_DECLS
 

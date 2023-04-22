@@ -39,8 +39,8 @@
 
 struct pgm_ifaddrs_t;
 
-#include <pgm/types.h>
-#include <pgm/error.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
 
 PGM_BEGIN_DECLS
 

@@ -31,8 +31,8 @@
 #else
 #	include <io.h>
 #endif
-#include <pgm/pgm.h>
-#include "pgm/signal.h"
+#include <pgm_st/pgm.h>
+#include <pgm_st/signal.h>
 
 
 //#define SIGNAL_DEBUG

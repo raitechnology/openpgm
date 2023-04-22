@@ -43,10 +43,10 @@ struct pgm_fecinto_t;
 #	include <sys/select.h>
 #	include <sys/socket.h>
 #endif
-#include <pgm/types.h>
-#include <pgm/error.h>
-#include <pgm/msgv.h>
-#include <pgm/tsi.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
+#include <pgm_st/msgv.h>
+#include <pgm_st/tsi.h>
 
 PGM_BEGIN_DECLS
 

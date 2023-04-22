@@ -33,7 +33,7 @@
 /* mock functions for external references */
 
 #define PGM_COMPILATION
-#include "pgm/atomic.h"
+#include "pgm_st/atomic.h"
 
 
 /* target:

@@ -27,7 +27,7 @@
 #endif
 #include <stdlib.h>
 #include <glib.h>
-#include <pgm/backtrace.h>
+#include <pgm_st/backtrace.h>
 
 
 void

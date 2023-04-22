@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * HTTP administrative interface
+ * SNMP
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,18 +22,16 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_HTTP_H__
-#define __PGM_HTTP_H__
+#ifndef __PGM_SNMP_H__
+#define __PGM_SNMP_H__
 
-#include <pgm/pgm.h>
+#include <pgm_st/pgm.h>
 
 PGM_BEGIN_DECLS
 
-#define PGM_HTTP_DEFAULT_SERVER_PORT	4968
-
-bool pgm_http_init (uint16_t, pgm_error_t**) PGM_GNUC_WARN_UNUSED_RESULT;
-bool pgm_http_shutdown (void);
+bool pgm_snmp_init (pgm_error_t**) PGM_GNUC_WARN_UNUSED_RESULT;
+bool pgm_snmp_shutdown (void);
 
 PGM_END_DECLS
 
-#endif /* __PGM_HTTP_H__ */
+#endif /* __PGM_SNMP_H__ */

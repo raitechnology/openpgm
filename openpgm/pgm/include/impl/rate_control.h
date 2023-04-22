@@ -31,8 +31,8 @@
 
 typedef struct pgm_rate_t pgm_rate_t;
 
-#include <pgm/types.h>
-#include <pgm/time.h>
+#include <pgm_st/types.h>
+#include <pgm_st/time.h>
 #include <impl/thread.h>
 
 PGM_BEGIN_DECLS

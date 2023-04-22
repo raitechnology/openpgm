@@ -69,7 +69,7 @@ main(int argc, char* argv[])
 	puts("#       include <config.h>");
 	puts("#endif");
 	puts("#include <impl/framework.h>");
-	puts("#include <pgm/version.h>");
+	puts("#include <pgm_st/version.h>");
 	printf("const unsigned pgm_major_version = 5;\n");
 	printf("const unsigned pgm_minor_version = 2;\n");
 	printf("const unsigned pgm_micro_version = 127;\n");

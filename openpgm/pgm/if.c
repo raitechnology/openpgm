@@ -41,7 +41,7 @@
 #include <impl/i18n.h>
 #include <impl/framework.h>
 #include <impl/inet_lnaof.h>
-#include <pgm/if.h>
+#include <pgm_st/if.h>
 
 
 #define IF_DEBUG

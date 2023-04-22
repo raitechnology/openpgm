@@ -29,8 +29,8 @@
 #ifndef __PGM_IMPL_TSI_H__
 #define __PGM_IMPL_TSI_H__
 
-#include <pgm/types.h>
-#include <pgm/tsi.h>
+#include <pgm_st/types.h>
+#include <pgm_st/tsi.h>
 #include <impl/hashtable.h>
 
 PGM_BEGIN_DECLS

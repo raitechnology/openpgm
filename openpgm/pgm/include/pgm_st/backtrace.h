@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * OpenPGM version.
+ * Dump back trace to stderr and try gdb.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,23 +22,15 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_VERSION_H__
-#define __PGM_VERSION_H__
+#ifndef __PGM_BACKTRACE_H__
+#define __PGM_BACKTRACE_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 
-extern const unsigned pgm_major_version;
-extern const unsigned pgm_minor_version;
-extern const unsigned pgm_micro_version;
-
-extern const char* pgm_build_date;
-extern const char* pgm_build_time;
-extern const char* pgm_build_system;
-extern const char* pgm_build_machine;
-extern const char* pgm_build_revision;
+PGM_GNUC_NORETURN void on_sigsegv (int);
 
 PGM_END_DECLS
 
-#endif /* __PGM_VERSION_H__ */
+#endif /* __PGM_BACKTRACE_H__ */

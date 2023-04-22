@@ -32,7 +32,7 @@
 typedef struct pgm_string_t pgm_string_t;
 
 #include <stdarg.h>
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

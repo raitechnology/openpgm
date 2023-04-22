@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * network interface handling.
+ * PGM engine.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,15 +22,19 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_IF_H__
-#define __PGM_IF_H__
+#ifndef __PGM_ENGINE_H__
+#define __PGM_ENGINE_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
 
 PGM_BEGIN_DECLS
 
-void pgm_if_print_all (void);
+bool pgm_init (pgm_error_t**);
+bool pgm_supported (void) PGM_GNUC_WARN_UNUSED_RESULT PGM_GNUC_PURE;
+bool pgm_shutdown (void);
+void pgm_drop_superuser (void);
 
 PGM_END_DECLS
 
-#endif /* __PGM_IF_H__ */
+#endif /* __PGM_ENGINE_H__ */

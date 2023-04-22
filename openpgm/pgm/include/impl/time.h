@@ -29,9 +29,9 @@
 #ifndef __PGM_IMPL_TIME_H__
 #define __PGM_IMPL_TIME_H__
 
-#include <pgm/types.h>
-#include <pgm/error.h>
-#include <pgm/time.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
+#include <pgm_st/time.h>
 
 PGM_BEGIN_DECLS
 

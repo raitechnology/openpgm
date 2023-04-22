@@ -1,6 +1,6 @@
-/* vim:ts=8:sts=8:sw=4:noai:noexpandtab
+/* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * Vector message container
+ * OpenPGM, an implementation of the PGM network protocol.
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,36 +22,32 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_MSGV_H__
-#define __PGM_MSGV_H__
+#ifndef __PGM_H__
+#define __PGM_H__
 
-struct pgm_iovec;
-struct pgm_msgv_t;
+#ifdef _MSC_VER
+/* library dependencies for Visual Studio application builds */
+#	pragma comment (lib, "ws2_32")
+#	pragma comment (lib, "iphlpapi")
+#	pragma comment (lib, "winmm")
+#	pragma comment (lib, "advapi32")
+#endif
 
-#include <pgm/types.h>
-#include <pgm/packet.h>
-#include <pgm/skbuff.h>
+#include <pgm_st/atomic.h>
+#include <pgm_st/engine.h>
+#include <pgm_st/error.h>
+#include <pgm_st/gsi.h>
+#include <pgm_st/if.h>
+#include <pgm_st/macros.h>
+#include <pgm_st/mem.h>
+#include <pgm_st/messages.h>
+#include <pgm_st/msgv.h>
+#include <pgm_st/packet.h>
+#include <pgm_st/skbuff.h>
+#include <pgm_st/socket.h>
+#include <pgm_st/time.h>
+#include <pgm_st/tsi.h>
+#include <pgm_st/types.h>
+#include <pgm_st/version.h>
 
-PGM_BEGIN_DECLS
-
-/* struct for scatter/gather I/O */
-struct pgm_iovec {
-#ifndef _WIN32
-/* match struct iovec */
-	void*		iov_base;
-	size_t		iov_len;	/* size of iov_base */
-#else
-/* match WSABUF */
-	u_long		iov_len;
-	char*		iov_base;
-#endif /* _WIN32 */
-};
-
-struct pgm_msgv_t {
-	uint32_t		msgv_len;			/* number of elements in skb */
-	struct pgm_sk_buff_t*	msgv_skb[PGM_MAX_FRAGMENTS];	/* PGM socket buffer array */
-};
-
-PGM_END_DECLS
-
-#endif /* __PGM_MSGV_H__ */
+#endif /* __PGM_H__ */

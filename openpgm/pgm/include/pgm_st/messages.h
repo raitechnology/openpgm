@@ -25,7 +25,7 @@
 #ifndef __PGM_MESSAGES_H__
 #define __PGM_MESSAGES_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

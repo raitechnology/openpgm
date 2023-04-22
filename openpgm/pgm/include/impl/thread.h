@@ -56,7 +56,7 @@ extern bool pgm_smp_system;
 #ifdef __APPLE__
 #	include <libkern/OSAtomic.h>
 #endif
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #if defined( USE_TICKET_SPINLOCK )
 #	include <impl/ticket.h>
 #endif

@@ -31,7 +31,7 @@
 
 typedef struct pgm_rwspinlock_t pgm_rwspinlock_t;
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/ticket.h>
 
 PGM_BEGIN_DECLS

@@ -2,14 +2,14 @@ extern "C" {
 #ifdef HAVE_CONFIG_H
 #       include <config.h>
 #endif
-}
-
 #ifndef RXW_DEBUG
 #       define PGM_DISABLE_ASSERT
 #endif
 #include <impl/i18n.h>
 #include <impl/framework.h>
 #include <impl/rxw.h>
+}
+
 #ifdef _MSC_VER
 #pragma warning( disable : 4291 )
 #endif
@@ -1151,26 +1151,30 @@ pgm_rxw_dump (const pgm_rxw_t*const window )
           "cumulative_losses = %u, "
           "bytes_delivered = %u, "
           "msgs_delivered = %u, "
-          "size = %lu, "
-          "alloc = %lu, "
+          "size = %" PRIu64 ", "
+          "alloc = %" PRIu64 ", "
           "pdata = []"
           "}",
           window->tsi->gsi.identifier[0], 
-                  window->tsi->gsi.identifier[1],
-                  window->tsi->gsi.identifier[2],
-                  window->tsi->gsi.identifier[3],
-                  window->tsi->gsi.identifier[4],
-                  window->tsi->gsi.identifier[5],
-                  pgm_ntohs (window->tsi->sport),
+          window->tsi->gsi.identifier[1],
+          window->tsi->gsi.identifier[2],
+          window->tsi->gsi.identifier[3],
+          window->tsi->gsi.identifier[4],
+          window->tsi->gsi.identifier[5],
+          pgm_ntohs (window->tsi->sport),
+
           (void*)window->nak_backoff_queue.head,
-                  (void*)window->nak_backoff_queue.tail,
-                  window->nak_backoff_queue.length,
+          (void*)window->nak_backoff_queue.tail,
+          window->nak_backoff_queue.length,
+
           (void*)window->wait_ncf_queue.head,
-                  (void*)window->wait_ncf_queue.tail,
-                  window->wait_ncf_queue.length,
+          (void*)window->wait_ncf_queue.tail,
+          window->wait_ncf_queue.length,
+
           (void*)window->wait_data_queue.head,
-                  (void*)window->wait_data_queue.tail,
-                  window->wait_data_queue.length,
+          (void*)window->wait_data_queue.tail,
+          window->wait_data_queue.length,
+
           window->lost_count,
           window->fragment_count,
           window->parity_count,
@@ -1194,8 +1198,7 @@ pgm_rxw_dump (const pgm_rxw_t*const window )
           window->cumulative_losses,
           window->bytes_delivered,
           window->msgs_delivered,
-          window->size,
-          window->alloc );
+          (uint64_t) window->size,
+          (uint64_t) window->alloc );
 }
-
 }

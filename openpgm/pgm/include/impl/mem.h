@@ -25,7 +25,7 @@
 #ifndef __PGM_IMPL_MEM_H__
 #define __PGM_IMPL_MEM_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 PGM_BEGIN_DECLS
 

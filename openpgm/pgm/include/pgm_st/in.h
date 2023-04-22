@@ -27,7 +27,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 
 #if (!defined( __FreeBSD__ ) && !defined( __APPLE__ )) \
 	|| (defined( __APPLE__ ) && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)

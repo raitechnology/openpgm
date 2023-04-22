@@ -15,7 +15,7 @@
 #include <impl/receiver.h>
 #include <impl/socket.h>
 
-#include "pgm/snmp.h"
+#include "pgm_st/snmp.h"
 #include "impl/pgmMIB.h"
 #include "impl/pgmMIB_columns.h"
 #include "impl/pgmMIB_enums.h"

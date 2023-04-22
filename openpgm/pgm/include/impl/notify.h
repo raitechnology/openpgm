@@ -41,7 +41,7 @@ typedef struct pgm_notify_t pgm_notify_t;
 #	include <memory.h>
 #	include <ws2tcpip.h>
 #endif
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/messages.h>
 #include <impl/sockaddr.h>
 
@@ -209,7 +209,7 @@ pgm_notify_init (
 	sockerr = closesocket (listener);
 	pgm_assert (sockerr != SOCKET_ERROR);
 
-	return 0;
+	return sockerr == SOCKET_ERROR ? -1 : 0;
 #endif /* HAVE_EVENTFD */
 }
 

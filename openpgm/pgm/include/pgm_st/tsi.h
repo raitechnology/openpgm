@@ -1,6 +1,6 @@
 /* vim:ts=8:sts=4:sw=4:noai:noexpandtab
  * 
- * basic logging.
+ * transport session ID helper functions
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,15 +22,31 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_LOG_H__
-#define __PGM_LOG_H__
+#ifndef __PGM_TSI_H__
+#define __PGM_TSI_H__
 
-#include <pgm/pgm.h>
+typedef struct pgm_tsi_t pgm_tsi_t;
+
+#include <pgm_st/types.h>
+#include <pgm_st/gsi.h>
 
 PGM_BEGIN_DECLS
 
-bool log_init (void);
+/* maximum length of TSI as a string */
+#define PGM_TSISTRLEN		(sizeof("000.000.000.000.000.000.00000"))
+#define PGM_TSI_INIT		{ PGM_GSI_INIT, 0 }
+
+struct pgm_tsi_t {
+	pgm_gsi_t	gsi;		/* global session identifier */
+	uint16_t	sport;		/* source port: a random number to help detect session re-starts */
+};
+
+PGM_STATIC_ASSERT(sizeof(struct pgm_tsi_t) == 8);
+
+char* pgm_tsi_print (const pgm_tsi_t*) PGM_GNUC_WARN_UNUSED_RESULT;
+int pgm_tsi_print_r (const pgm_tsi_t*restrict, char*restrict, size_t);
+bool pgm_tsi_equal (const void*restrict, const void*restrict) PGM_GNUC_WARN_UNUSED_RESULT;
 
 PGM_END_DECLS
 
-#endif /* __PGM_LOG_H__ */
+#endif /* __PGM_TSI_H__ */

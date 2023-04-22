@@ -29,14 +29,14 @@
 
 struct pgm_sk_buff_t;
 
-#include <pgm/types.h>
-#include <pgm/atomic.h>
-#include <pgm/mem.h>
-#include <pgm/list.h>
-#include <pgm/time.h>
-#include <pgm/packet.h>
-#include <pgm/tsi.h>
-#include <pgm/socket.h>
+#include <pgm_st/types.h>
+#include <pgm_st/atomic.h>
+#include <pgm_st/mem.h>
+#include <pgm_st/list.h>
+#include <pgm_st/time.h>
+#include <pgm_st/packet.h>
+#include <pgm_st/tsi.h>
+#include <pgm_st/socket.h>
 
 PGM_BEGIN_DECLS
 

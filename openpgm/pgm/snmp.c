@@ -27,7 +27,7 @@
 #include <impl/i18n.h>
 #include <impl/framework.h>
 
-#include "pgm/snmp.h"
+#include <pgm_st/snmp.h>
 #include "impl/pgmMIB.h"
 
 

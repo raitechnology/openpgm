@@ -54,8 +54,8 @@ typedef union pgm_ticket_t pgm_ticket_t;
 #	include <pthread.h>
 #	include <unistd.h>
 #endif
-#include <pgm/types.h>
-#include <pgm/atomic.h>
+#include <pgm_st/types.h>
+#include <pgm_st/atomic.h>
 #include <impl/thread.h>
 
 PGM_BEGIN_DECLS

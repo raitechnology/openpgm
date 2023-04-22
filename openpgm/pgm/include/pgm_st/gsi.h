@@ -27,8 +27,8 @@
 
 typedef struct pgm_gsi_t pgm_gsi_t;
 
-#include <pgm/types.h>
-#include <pgm/error.h>
+#include <pgm_st/types.h>
+#include <pgm_st/error.h>
 
 PGM_BEGIN_DECLS
 

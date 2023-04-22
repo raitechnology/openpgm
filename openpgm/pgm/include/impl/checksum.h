@@ -29,7 +29,7 @@
 #ifndef __PGM_IMPL_CHECKSUM_H__
 #define __PGM_IMPL_CHECKSUM_H__
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/cpu.h>
 
 PGM_BEGIN_DECLS

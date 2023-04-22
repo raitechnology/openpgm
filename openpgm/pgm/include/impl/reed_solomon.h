@@ -30,7 +30,7 @@
 
 typedef struct pgm_rs_t pgm_rs_t;
 
-#include <pgm/types.h>
+#include <pgm_st/types.h>
 #include <impl/galois.h>
 
 PGM_BEGIN_DECLS

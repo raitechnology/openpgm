@@ -1,6 +1,6 @@
-/* vim:ts=8:sts=4:sw=4:noai:noexpandtab
+/* vim:ts=8:sts=8:sw=4:noai:noexpandtab
  * 
- * SNMP
+ * Vector message container
  *
  * Copyright (c) 2006-2010 Miru Limited.
  *
@@ -22,16 +22,36 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #	pragma once
 #endif
-#ifndef __PGM_SNMP_H__
-#define __PGM_SNMP_H__
+#ifndef __PGM_MSGV_H__
+#define __PGM_MSGV_H__
 
-#include <pgm/pgm.h>
+struct pgm_iovec;
+struct pgm_msgv_t;
+
+#include <pgm_st/types.h>
+#include <pgm_st/packet.h>
+#include <pgm_st/skbuff.h>
 
 PGM_BEGIN_DECLS
 
-bool pgm_snmp_init (pgm_error_t**) PGM_GNUC_WARN_UNUSED_RESULT;
-bool pgm_snmp_shutdown (void);
+/* struct for scatter/gather I/O */
+struct pgm_iovec {
+#ifndef _WIN32
+/* match struct iovec */
+	void*		iov_base;
+	size_t		iov_len;	/* size of iov_base */
+#else
+/* match WSABUF */
+	u_long		iov_len;
+	char*		iov_base;
+#endif /* _WIN32 */
+};
+
+struct pgm_msgv_t {
+	uint32_t		msgv_len;			/* number of elements in skb */
+	struct pgm_sk_buff_t*	msgv_skb[PGM_MAX_FRAGMENTS];	/* PGM socket buffer array */
+};
 
 PGM_END_DECLS
 
-#endif /* __PGM_SNMP_H__ */
+#endif /* __PGM_MSGV_H__ */

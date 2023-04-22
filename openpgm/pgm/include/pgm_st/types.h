@@ -29,7 +29,7 @@
 #	include <sys/param.h>
 #	include <sys/types.h>
 #endif
-#include <pgm/macros.h>
+#include <pgm_st/macros.h>
 
 #ifdef _WIN32
 #	include <ws2tcpip.h>
@@ -59,7 +59,7 @@
 #		include <stdint.h>
 #	else
 /* compatibility implementation */
-#		include <pgm/winint.h>
+#		include <pgm_st/winint.h>
 #	endif
 #	if !defined( PGM_SSIZE_T_DEFINED )
 #		define ssize_t		ptrdiff_t
