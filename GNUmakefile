@@ -39,6 +39,10 @@ ifeq (-mingw,$(findstring -mingw,$(port_extra)))
   CXX   := /usr/bin/x86_64-w64-mingw32-g++
   mingw := true
 endif
+ifeq (,$(port_extra))
+  build_cflags := $(shell if [ -x /bin/rpm ]; then /bin/rpm --eval '%{optflags}' ; \
+                          elif [ -x /bin/dpkg-buildflags ] ; then /bin/dpkg-buildflags --get CFLAGS ; fi)
+endif
 # msys2 using ucrt64
 ifeq (MSYS2,$(lsb_dist))
   mingw := true
@@ -65,13 +69,13 @@ ifeq (Darwin,$(lsb_dist))
 dll       := dylib
 endif
 # rpmbuild uses RPM_OPT_FLAGS
-ifeq ($(RPM_OPT_FLAGS),)
-CFLAGS ?= $(default_cflags)
-else
-CFLAGS ?= $(RPM_OPT_FLAGS)
-endif
-cflags   := $(gcc_wflags) $(CFLAGS) -std=c99 $(default_cflags) $(arch_cflags)
-cppflags := $(gcc_wflags) $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions $(default_cflags) $(arch_cflags)
+#ifeq ($(RPM_OPT_FLAGS),)
+CFLAGS ?= $(build_cflags) $(default_cflags)
+#else
+#CFLAGS ?= $(RPM_OPT_FLAGS)
+#endif
+cflags   := $(gcc_wflags) $(CFLAGS) -std=c99 $(arch_cflags)
+cppflags := $(gcc_wflags) $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions $(arch_cflags)
 
 # where to find the raids/xyz.h files
 INCLUDES    ?= -Iopenpgm/pgm/include
