@@ -1408,6 +1408,7 @@ pgm_sockaddr_to_nla (
 		break;
 
 	default:
+		*(uint16_t*)nla = 0;
 		retval = -EINVAL;
 		break;
 	}

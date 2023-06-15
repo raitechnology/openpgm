@@ -321,6 +321,7 @@ pgm_on_nak (
 	nak6 = (struct pgm_nak6*)skb->data;
 		
 /* NAK_SRC_NLA contains our sock unicast NLA */
+	nak_src_nla.ss_family = 0;
 	pgm_nla_to_sockaddr (&nak->nak_src_nla_afi, (struct sockaddr*)&nak_src_nla);
 
 /* copy scope id from socket */
