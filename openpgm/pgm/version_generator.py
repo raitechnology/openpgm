@@ -40,7 +40,7 @@ print ("""
 #	include <config.h>
 #endif
 #include <impl/framework.h>
-#include <pgm/version.h>
+#include <pgm_st/version.h>
 
 
 /* globals */

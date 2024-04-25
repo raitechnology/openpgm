@@ -170,7 +170,7 @@ openpgm/pgm/galois_tables.c: openpgm/pgm/galois_generator.pl
 	perl openpgm/pgm/galois_generator.pl > openpgm/pgm/galois_tables.c
 
 openpgm/pgm/version.c: openpgm/pgm/version_generator.py
-	python openpgm/pgm/version_generator.py > openpgm/pgm/version.c
+	python3 openpgm/pgm/version_generator.py > openpgm/pgm/version.c
 
 libopenpgm_files1 := \
                 cpu thread mem string list slist queue hashtable \
