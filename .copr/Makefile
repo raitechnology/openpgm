@@ -8,7 +8,7 @@ git_hash    := $(shell git rev-parse --short=8 rai)
 major_num   := 5
 minor_num   := 5
 patch_num   := 0
-build_num   := 136
+build_num   := 137
 version     := $(major_num).$(minor_num).$(patch_num)
 ver_build   := $(version)-$(build_num)
 name_ver    := $(name)-$(ver_build)
@@ -33,3 +33,6 @@ rpmbuild/SOURCES/$(name_ver).tar.gz:
 	for i in $(srctree) ; do ln -sf ../../../$$i $(rpm_src_dir) ; done
 	( cd rpmbuild/SOURCES && tar chzf $(name_ver).tar.gz --exclude=".*.sw*" $(name)-$(version) && rm -r -f $(name)-$(version) )
 
+.PHONY: spec_version
+spec_version:
+	@echo "$(name)_dep := $(major_num).$(minor_num)"
