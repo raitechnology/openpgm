@@ -128,7 +128,7 @@ WIN_DEFS    ?= -DWIN32 \
 #	       -DHAVE_DSO_VISIBILITY 
 ifeq (true,$(mingw))
 defines     := $(WIN_DEFS) -DMINGW
-sock_lib    := -lws2_32 -lwinmm -liphlpapi
+sock_lib    := -lws2_32 -lpsapi -lwinmm -liphlpapi
 math_lib    := -lm
 thread_lib  :=
 else
